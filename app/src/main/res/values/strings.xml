@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">Recoder</string>
+    <string name="start_record">START RECORD</string>
+    <string name="stop_record">STOP RECORD</string>
+    <string name="select_file">SELECT File</string>
+    <string name="start_play">START PLAY</string>
+    <string name="pause">PAUSE</string>
+    <string name="reset">RESET</string>
+    <string name="record">RECORD</string>
+    <string name="play">PLAY</string>
+    <string name="time">TIME</string>
+    <string name="sample_frequency">SAMPLING RATE</string>
+    <string name="phase">PHASE</string>
+    <string name="generate">GENERATE</string>
+    <string name="frequency">FREQUENCY</string>
+</resources>
