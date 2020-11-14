@@ -22,12 +22,12 @@
 
 #### 功能实现
 
-- 编码文本部分：将输入文本使用`utf-8`进行编码成字节（可参考 https://github.com/sunziping2016/SoundMessage/blob/1a64021e57933b2c3a3bcb0ebd200653a5d7754b/app/src/main/java/io/szp/soundmessage/SignalProcessing.java#L210）
-- 生成帧数据部分：按照帧格式，形成帧数据，包括前导码，校验码等（可参考https://github.com/sunziping2016/SoundMessage/blob/1a64021e57933b2c3a3bcb0ebd200653a5d7754b/app/src/main/java/io/szp/soundmessage/MainActivity.java#L525）
-- 调制部分：按照调制协议格式，将帧数据调制为帧信号（https://github.com/sunziping2016/SoundMessage/blob/1a64021e57933b2c3a3bcb0ebd200653a5d7754b/app/src/main/java/io/szp/soundmessage/MainActivity.java#L525）
-- 发送部分：使用`MediaPlayer`或者`AudioTrack`进行播放（可参考https://github.com/sunziping2016/SoundMessage/blob/1a64021e57933b2c3a3bcb0ebd200653a5d7754b/app/src/main/java/io/szp/soundmessage/MainActivity.java#L632）
-- 接收部分：开始接收声音信号后，解码信号（可参考https://github.com/sunziping2016/SoundMessage/blob/1a64021e57933b2c3a3bcb0ebd200653a5d7754b/app/src/main/java/io/szp/soundmessage/MainActivity.java#L738）
-- 解码部分：匹配前导码，获取传输数据后，校验，并将数据按照`utf-8`格式解码为文本（可参考https://github.com/sunziping2016/SoundMessage/blob/1a64021e57933b2c3a3bcb0ebd200653a5d7754b/app/src/main/java/io/szp/soundmessage/MainActivity.java#L777）
+- 编码文本部分：将输入文本使用`utf-8`进行编码成字节（可参考 https://github.com/sunziping2016/SoundMessage/blob/1a64021e57933b2c3a3bcb0ebd200653a5d7754b/app/src/main/java/io/szp/soundmessage/SignalProcessing.java#L210 ）
+- 生成帧数据部分：按照帧格式，形成帧数据，包括前导码，校验码等（可参考https://github.com/sunziping2016/SoundMessage/blob/1a64021e57933b2c3a3bcb0ebd200653a5d7754b/app/src/main/java/io/szp/soundmessage/MainActivity.java#L525 ）
+- 调制部分：按照调制协议格式，将帧数据调制为帧信号（https://github.com/sunziping2016/SoundMessage/blob/1a64021e57933b2c3a3bcb0ebd200653a5d7754b/app/src/main/java/io/szp/soundmessage/MainActivity.java#L525 ）
+- 发送部分：使用`MediaPlayer`或者`AudioTrack`进行播放（可参考https://github.com/sunziping2016/SoundMessage/blob/1a64021e57933b2c3a3bcb0ebd200653a5d7754b/app/src/main/java/io/szp/soundmessage/MainActivity.java#L632 ）
+- 接收部分：开始接收声音信号后，解码信号（可参考https://github.com/sunziping2016/SoundMessage/blob/1a64021e57933b2c3a3bcb0ebd200653a5d7754b/app/src/main/java/io/szp/soundmessage/MainActivity.java#L738 ）
+- 解码部分：匹配前导码，获取传输数据后，校验，并将数据按照`utf-8`格式解码为文本（可参考https://github.com/sunziping2016/SoundMessage/blob/1a64021e57933b2c3a3bcb0ebd200653a5d7754b/app/src/main/java/io/szp/soundmessage/MainActivity.java#L777 ）
 
 
 
