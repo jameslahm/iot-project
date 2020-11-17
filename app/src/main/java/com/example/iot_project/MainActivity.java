@@ -61,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
     // send text using samplingRate and frequency
     int samplingRate = 44100;
     int encodeFrequencyForZero = 20000;
-    int encodeFrequencyForOne = 400;
+    int encodeFrequencyForOne = 10000;
     double windowTime = 0.010;
     int windowWidth = (int)(windowTime * samplingRate);
 
@@ -384,24 +384,34 @@ public class MainActivity extends AppCompatActivity {
             }
             fft.fft(x,y);
 
-            int indexForOne= (int) ((double)encodeFrequencyForOne/samplingRate) * FFT_LEN;
-            int indexForZero= (int) ((double)encodeFrequencyForZero/samplingRate) * FFT_LEN;
+            int indexForOne= (int) ((double)encodeFrequencyForOne/samplingRate * FFT_LEN);
+            int indexForZero= (int) ((double)encodeFrequencyForZero/samplingRate * FFT_LEN);
+
+//            System.out.println(indexForOne);
+//            System.out.println(indexForZero);
 
             double[] z =new double[FFT_LEN];
+
             for(int j=0;j<FFT_LEN;j++){
                 z[j]=Math.pow(x[j],2)+Math.pow(y[j],2);
+//                System.out.println(z[j]);
             }
 
             int argMaxIndex = argMax(z);
-            if (Math.abs(argMaxIndex-indexForOne)<=1){
+//            System.out.println(argMaxIndex);
+
+            if (Math.abs(argMaxIndex-indexForOne)<=2){
                 dataBits[i]=1;
-                continue;
+                System.out.println(dataBits[i]);
             }
-            if (Math.abs(argMaxIndex-indexForZero)<=1){
+            else if (Math.abs(argMaxIndex-indexForZero)<=2){
                 dataBits[i]=0;
-                continue;
+                System.out.println(dataBits[i]);
             }
-            dataBits[i]=(byte) 0xff;
+            else{
+                dataBits[i]=(byte) 0xff;
+            }
+//            System.out.println(dataBits[i]);
         }
 
         return dataBits;
@@ -487,7 +497,7 @@ public class MainActivity extends AppCompatActivity {
         byte[] dataBits = signal2DataBits(buffer);
         int bitsLength = dataBits.length;
 
-        debugBytes(dataBits,false);
+//        debugBytes(dataBits,false);
 
 //        int currentDataBitsIndex = 0;
         int currentPreambleBitsIndex= 0;
