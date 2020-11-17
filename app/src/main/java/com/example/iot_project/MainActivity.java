@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
     // isRecording
     boolean isRecving = false;
     // audio record buffer size
-    int bufferSize = 0;
+    int bufferSize = 4096;
 
     // frame args
     int PREAMBLE_BYTE_LENGTH = 1;
@@ -200,7 +200,6 @@ public class MainActivity extends AppCompatActivity {
         for (int i=PREAMBLE_BYTE_LENGTH;i<HEADER_BYTE_LENGTH+PREAMBLE_BYTE_LENGTH;i++){
             dataBytes[i]=(byte) textBytes.length;
         }
-
         // construct bit data
         byte[] dataBits = new byte[dataBytes.length*8];
         for (int i=0; i<dataBytes.length*8; i++) {
@@ -211,7 +210,6 @@ public class MainActivity extends AppCompatActivity {
                 dataBits[i]=0;
             }
         }
-
         // save bits to wav file
         generateWav(dataBits);
 
@@ -236,22 +234,23 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-
         // save temp file
-        String filename=Environment.getExternalStorageDirectory().getAbsolutePath()+"/raw.wav";
+        String filename=getExternalFilesDir("").getAbsolutePath()+"/raw.wav";
+        System.out.println(filename);
         file = new File(filename);
         if (file.exists())
             file.delete();
         try {
             file.createNewFile();
         } catch (IOException e) {
-            System.out.println(e.getMessage());
+            System.out.println(e);
             throw new IllegalStateException("未能创建" + file.toString());
         }
         try {
             OutputStream os = new FileOutputStream(file);
             BufferedOutputStream bos = new BufferedOutputStream(os);
             DataOutputStream dos = new DataOutputStream(bos);
+            System.out.println(wave.length);
             for(int i=0;i<wave.length;i++){
                 dos.write(wave[i]);
             }
@@ -262,7 +261,7 @@ public class MainActivity extends AppCompatActivity {
         Date now = Calendar.getInstance().getTime();
         System.out.println(now);
         // using time as file name
-        String filepath =Environment.getExternalStorageDirectory().getAbsolutePath()+"/"+now.toString()+".wav";
+        String filepath =getExternalFilesDir("").getAbsolutePath()+"/"+now.toString()+".wav";
         // write to .wav
         copyWaveFile(filename,filepath,samplingRate,bufferSize);
         if(mediaPlayer!=null){
