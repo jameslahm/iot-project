@@ -41,32 +41,14 @@ public class MainActivity extends AppCompatActivity {
     // current mediaPlayer
     MediaPlayer mediaPlayer;
 
-    // Start Stop record button
-    Button startRecordButton, stopRecordButton;
-    // Start Pause Reset Button
-    Button startPlayButton, pausePlayButton, resetPlayButton;
-    // Record sample frequency
-    EditText recordSamplingRateInput;
-    // Generate sample frequency
-    EditText samplingRateInput;
-    // Generate time
-    EditText timeInput;
-    // Generate frequency
-    EditText frequencyInput;
-    // Generate phase
-    EditText phaseInput;
+    // Start Stop recv text button
+    Button startRecvButton, stopRecvButton;
 
+    // send text using samplingRate and frequency
     int generateSamplingRate =1000;
     int generateFrequency =44100;
-    int generateTime =10;
-    double generatePhase =0;
 
-    // Generate Button;
-    Button generateButton;
-    // Select File Button
-    Button selectFileButton;
-
-    // Record
+    // Recv
     // 48K sample frequency default;
     int samplingRate = 48000;
     // single channel
@@ -74,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
     // 16Bit
     int audioEncoding = AudioFormat.ENCODING_PCM_16BIT;
     // isRecording
-    boolean isRecording = false;
+    boolean isRecving = false;
     // audio record buffer size
     int bufferSize = 0;
 
@@ -105,35 +87,19 @@ public class MainActivity extends AppCompatActivity {
         GetPermission();
 
         // init button and input
-        startRecordButton = (Button)findViewById(R.id.start_record);
-        stopRecordButton = (Button)findViewById(R.id.stop_record);
-        selectFileButton =(Button)findViewById(R.id.select_file);
-        startPlayButton =(Button)findViewById(R.id.start);
-        pausePlayButton =(Button)findViewById(R.id.pause);
-        resetPlayButton =(Button)findViewById(R.id.reset);
-        generateButton =(Button)findViewById(R.id.generate);
-        recordSamplingRateInput =(EditText)findViewById(R.id.record_sample_rate);
-        samplingRateInput =(EditText)findViewById(R.id.sample_rate);
-        timeInput=(EditText)findViewById(R.id.time);
-        frequencyInput=(EditText)findViewById(R.id.frequency);
-        phaseInput=(EditText)findViewById(R.id.phase);
-
+        startRecvButton = (Button)findViewById(R.id.start_recv_button);
+        stopRecvButton = (Button)findViewById(R.id.stop_recv_button);
 
         // disable stopRecord
-        stopRecordButton.setEnabled(false);
+        stopRecvButton.setEnabled(false);
 
         // setup onClick
-        startRecordButton.setOnClickListener(new View.OnClickListener() {
+        startRecvButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 // enable stop record
-                stopRecordButton.setEnabled(true);
-                startRecordButton.setEnabled(false);
-
-                String recordSampleFrequencyString= recordSamplingRateInput.getText().toString();
-                if(!recordSampleFrequencyString.isEmpty()){
-                    samplingRate =Integer.parseInt(recordSampleFrequencyString);
-                }
+                stopRecvButton.setEnabled(true);
+                startRecvButton.setEnabled(false);
 
                 Thread thread = new Thread(new Runnable() {
                     @Override
@@ -141,15 +107,8 @@ public class MainActivity extends AppCompatActivity {
                         // get temp file name
                         String name = Environment.getExternalStorageDirectory().getAbsolutePath()+"/raw.wav";
                         System.out.println(name);
-                        // start record
-                        startRecord(name);
-                        // get time
-                        Date now = Calendar.getInstance().getTime();
-                        System.out.println(now);
-                        // using time as file name
-                        String filepath =Environment.getExternalStorageDirectory().getAbsolutePath()+"/"+now.toString()+".wav";
-                        // write to .wav
-                        copyWaveFile(name, filepath,samplingRate,bufferSize);
+                        // start recv text
+                        startRecv(name);
                     }
                 });
                 // start run
@@ -157,216 +116,81 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        stopRecordButton.setOnClickListener(new View.OnClickListener() {
+        stopRecvButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 // stop record
-                isRecording = false;
+                isRecving = false;
                 // enable start record
-                stopRecordButton.setEnabled(false);
-                startRecordButton.setEnabled(true);
+                stopRecvButton.setEnabled(false);
+                startRecvButton.setEnabled(true);
             }
         });
-
-        // select file button
-        selectFileButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                openSystemFile();
-            }
-        });
-
-        // start play button
-        startPlayButton.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v){
-                startPlay();
-            }
-        });
-
-        // pause play button
-        pausePlayButton.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v){
-                pausePlay();
-            }
-        });
-
-        // reset play button
-        resetPlayButton.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v){
-                resetPlay();
-            }
-        });
-
-        // generate button
-        generateButton.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v){
-                Thread thread = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        generateWav();
-                    }
-                });
-                thread.start();
-            }
-        });
-
-        // disable play buttons
-        startPlayButton.setEnabled(false);
-        pausePlayButton.setEnabled(false);
-        resetPlayButton.setEnabled(false);
     }
 
     // generate .wav
     public void generateWav(){
-        // get params
-        String generateSamplingRateString = samplingRateInput.getText().toString();
-        if(!generateSamplingRateString.isEmpty()){
-            generateSamplingRate =Integer.parseInt(generateSamplingRateString);
-        }
-        String generateTimeString=timeInput.getText().toString();
-        if(!generateTimeString.isEmpty()){
-            generateTime =Integer.parseInt(generateTimeString);
-        }
-        String generateFrequencyString=frequencyInput.getText().toString();
-        if(!generateFrequencyString.isEmpty()){
-            generateFrequency =Integer.parseInt(generateFrequencyString);
-        }
-        String generatePhaseString=phaseInput.getText().toString();
-        if(!generatePhaseString.isEmpty()){
-            generatePhase =Integer.parseInt(generatePhaseString)/180*Math.PI;
-        }
 
-        int length= generateSamplingRate * generateTime;
-        System.out.println(length);
-        byte[] wave= new byte[length*2];
-        bufferSize=length*2;
-        // generate data
-        for(int i=0;i<length;i++) {
-            double normalizedWaveValue = Math.sin(2 * Math.PI * generateFrequency * ((double)i / length) * generateTime + generatePhase);
-            short waveValue = (short) (Short.MAX_VALUE * normalizedWaveValue);
-            wave[i*2]=(byte) (waveValue & 0xFF);
-            wave[i*2+1]=(byte) ((waveValue >> 8) & 0xFF);
-        }
+//        System.out.println(length);
+//        byte[] wave= new byte[length*2];
+//        bufferSize=length*2;
+//        // generate data
+//        for(int i=0;i<length;i++) {
+//            double normalizedWaveValue = Math.sin(2 * Math.PI * generateFrequency * ((double)i / length) * generateTime + generatePhase);
+//            short waveValue = (short) (Short.MAX_VALUE * normalizedWaveValue);
+//            wave[i*2]=(byte) (waveValue & 0xFF);
+//            wave[i*2+1]=(byte) ((waveValue >> 8) & 0xFF);
+//        }
 
-        String filename=Environment.getExternalStorageDirectory().getAbsolutePath()+"/raw.wav";
-        // create temp file
-        file = new File(filename);
-        //如果文件已经存在，就先删除再创建
-        if (file.exists())
-            file.delete();
-        try {
-            file.createNewFile();
-        } catch (IOException e) {
-            throw new IllegalStateException("未能创建" + file.toString());
-        }
-        try {
-            OutputStream os = new FileOutputStream(file);
-            BufferedOutputStream bos = new BufferedOutputStream(os);
-            DataOutputStream dos = new DataOutputStream(bos);
-            for(int i=0;i<wave.length;i++){
-                dos.write(wave[i]);
-            }
-            dos.close();
-        } catch (Throwable t) {
-            Log.e("MainActivity", "录音失败");
-        }
-        Date now = Calendar.getInstance().getTime();
-        System.out.println(now);
-        // using time as file name
-        String filepath =Environment.getExternalStorageDirectory().getAbsolutePath()+"/"+now.toString()+".wav";
-        // write to .wav
-        copyWaveFile(filename,filepath,generateSamplingRate,bufferSize);
-        if(mediaPlayer!=null){
-            mediaPlayer.stop();
-            mediaPlayer.release();
-            mediaPlayer=null;
-        }
-        // setup mediaPlayer
-        mediaPlayer=new MediaPlayer();
-        try {
-            File file = new File(filepath);
-            FileInputStream inputStream = new FileInputStream(file);
-            mediaPlayer.setDataSource(inputStream.getFD());
-            mediaPlayer.prepare();
-            startPlayButton.setEnabled(true);
-            pausePlayButton.setEnabled(true);
-            resetPlayButton.setEnabled(true);
-            inputStream.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-    }
-
-    // start play
-    public void startPlay(){
-        mediaPlayer.start();
-        System.out.println("Start Play");
-    }
-
-    // pause play
-    public  void pausePlay() {
-        mediaPlayer.pause();
-//        try{
+//        String filename=Environment.getExternalStorageDirectory().getAbsolutePath()+"/raw.wav";
+//        // create temp file
+//        file = new File(filename);
+//        //如果文件已经存在，就先删除再创建
+//        if (file.exists())
+//            file.delete();
+//        try {
+//            file.createNewFile();
+//        } catch (IOException e) {
+//            throw new IllegalStateException("未能创建" + file.toString());
+//        }
+//        try {
+//            OutputStream os = new FileOutputStream(file);
+//            BufferedOutputStream bos = new BufferedOutputStream(os);
+//            DataOutputStream dos = new DataOutputStream(bos);
+//            for(int i=0;i<wave.length;i++){
+//                dos.write(wave[i]);
+//            }
+//            dos.close();
+//        } catch (Throwable t) {
+//            Log.e("MainActivity", "录音失败");
+//        }
+//        Date now = Calendar.getInstance().getTime();
+//        System.out.println(now);
+//        // using time as file name
+//        String filepath =Environment.getExternalStorageDirectory().getAbsolutePath()+"/"+now.toString()+".wav";
+//        // write to .wav
+//        copyWaveFile(filename,filepath,generateSamplingRate,bufferSize);
+//        if(mediaPlayer!=null){
+//            mediaPlayer.stop();
+//            mediaPlayer.release();
+//            mediaPlayer=null;
+//        }
+//        // setup mediaPlayer
+//        mediaPlayer=new MediaPlayer();
+//        try {
+//            File file = new File(filepath);
+//            FileInputStream inputStream = new FileInputStream(file);
+//            mediaPlayer.setDataSource(inputStream.getFD());
 //            mediaPlayer.prepare();
+//            inputStream.close();
 //        } catch (IOException e) {
 //            e.printStackTrace();
 //        }
 
-        System.out.println("Stop Play");
-    }
-
-    // reset play
-    public  void resetPlay(){
-        mediaPlayer.seekTo(0);
-        System.out.println("Reset Play");
-    }
-
-
-    // select file
-    public void openSystemFile() {
-        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-        intent.setType("*/*");
-        intent.addCategory(Intent.CATEGORY_DEFAULT);
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        try {
-            startActivityForResult(Intent.createChooser(intent, "请选择文件"), 1);
-        } catch (ActivityNotFoundException e) {
-            e.printStackTrace();
-            Toast.makeText(MainActivity.this, "请安装文件管理器", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    // handle select file result
-    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == 1 && resultCode == Activity.RESULT_OK) {
-            //Get the Uri of the selected file
-            Uri uri = data.getData();
-            if (null != uri) {
-                if(mediaPlayer!=null){
-                    mediaPlayer.stop();
-                    mediaPlayer.release();
-                    mediaPlayer=null;
-                }
-                System.out.println(uri);
-                // setup mediaPlayer
-                mediaPlayer= MediaPlayer.create(getApplicationContext(),uri);
-                startPlayButton.setEnabled(true);
-                pausePlayButton.setEnabled(true);
-                resetPlayButton.setEnabled(true);
-            }
-        }
     }
 
     // start record
-    public void startRecord(String name) {
+    public void startRecv(String name) {
 
         file = new File(name);
         if (file.exists())
@@ -388,10 +212,10 @@ public class MainActivity extends AppCompatActivity {
             // start record
             audioRecord.startRecording();
 
-            isRecording = true;
+            isRecving = true;
 
             // continue reading data
-            while (isRecording) {
+            while (isRecving) {
                 int bufferReadResult = audioRecord.read(buffer, 0, bufferSize);
                 for (int i = 0; i < bufferReadResult; i++) {
                     dos.write(buffer[i]);

@@ -13,4 +13,9 @@
     <string name="phase">PHASE</string>
     <string name="generate">GENERATE</string>
     <string name="frequency">FREQUENCY</string>
+    <string name="send_text">Please input the text</string>
+    <string name="send_text_button">Send Text</string>
+    <string name="recv_text_input">Recv Text</string>
+    <string name="start_recv_button">Start Recv</string>
+    <string name="stop_recv_button">Stop Recv</string>
 </resources>
