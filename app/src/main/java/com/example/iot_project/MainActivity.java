@@ -285,13 +285,26 @@ public class MainActivity extends AppCompatActivity {
             // continue reading data
             while (isRecving) {
                 int bufferReadResult = audioRecord.read(buffer, 0, bufferSize);
-                for (int i = 0; i < bufferReadResult; i++) {
-                }
+                // check if preamble
+                checkPreamble(buffer);
+
             }
             audioRecord.stop();
         } catch (Throwable t) {
             Log.e("MainActivity", "录音失败");
         }
+    }
+
+    public void checkPreamble(byte[] buffer){
+        // transfer buffer to signal data
+        double[] signalData = new double[buffer.length/2];
+        for(int i=0;i<buffer.length/2;i++){
+            int temp = buffer[2 * i];
+            temp = ((int)buffer[2*i+1]) << 8 + temp;
+            signalData[i] = (double)temp / Short.MAX_VALUE;
+        }
+
+
     }
 
     private void copyWaveFile(String inFileName, String outFileName, int samplingRate, int bufferSize) {
