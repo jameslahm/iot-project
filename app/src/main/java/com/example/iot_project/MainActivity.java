@@ -61,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
     // send text using samplingRate and frequency
     int samplingRate = 44100;
     int encodeFrequencyForZero = 20000;
-    int encodeFrequencyForOne = 40000;
+    int encodeFrequencyForOne = 400;
     double windowTime = 0.010;
     int windowWidth = (int)(windowTime * samplingRate);
 
@@ -76,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
 
     // frame args
     int PREAMBLE_BYTE_LENGTH = 1;
-    byte[] PREAMBLE_BYTES =  new byte[]{(byte)0x10101010};
+    byte[] PREAMBLE_BYTES =  new byte[]{(byte)0xaa};
     byte[] PREAMBLE_BITS = new byte[]{1,0,1,0,1,0,1,0};
 
     int HEADER_BYTE_LENGTH = 1;
@@ -181,6 +181,18 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    void debugBytes(byte[] buffer,boolean flag){
+        for(int i=0;i<buffer.length;i++){
+            if(flag) {
+                System.out.println(i+String.format(" 0x%2x", buffer[i]));
+                System.out.println(i+String.format(" %8s", Integer.toBinaryString(buffer[i] & 0xFF)).replace(' ', '0'));
+            }
+            else{
+                System.out.println(i+String.format(" 0x%2x", buffer[i]));
+            }
+        }
+    }
+
     // TODO: support text segment
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     public void sendText(String text) throws UnsupportedEncodingException {
@@ -200,6 +212,9 @@ public class MainActivity extends AppCompatActivity {
         for (int i=PREAMBLE_BYTE_LENGTH;i<HEADER_BYTE_LENGTH+PREAMBLE_BYTE_LENGTH;i++){
             dataBytes[i]=(byte) textBytes.length;
         }
+
+        debugBytes(dataBytes,true);
+
         // construct bit data
         byte[] dataBits = new byte[dataBytes.length*8];
         for (int i=0; i<dataBytes.length*8; i++) {
@@ -224,7 +239,13 @@ public class MainActivity extends AppCompatActivity {
         int totalLength = (int)(dataBits.length*windowTime*samplingRate);
         byte[] wave= new byte[totalLength*2];
         for(int i=0;i<dataBits.length;i++) {
-            int frequency = dataBits[i]==1 ? encodeFrequencyForOne : encodeFrequencyForZero;
+            int frequency;
+            if (dataBits[i]==1){
+                frequency = encodeFrequencyForOne;
+            }
+            else{
+                frequency = encodeFrequencyForZero;
+            }
             int base = (int)(i*windowTime*samplingRate)*2;
             for(int j=0;j<windowTime*samplingRate;j++){
                 double normalizedWaveValue = Math.sin(2 * Math.PI * frequency * ((double)j /(samplingRate)));
@@ -354,18 +375,33 @@ public class MainActivity extends AppCompatActivity {
         for(int i=0;i<bitsLength;i++){
             double[] x =new double[FFT_LEN];
             System.arraycopy(signalData,i*windowWidth,x,0,windowWidth);
+            for(int j=windowWidth;j<FFT_LEN;j++){
+                x[j]=0;
+            }
             double[] y = new double[FFT_LEN];
+            for(int j=0;j<FFT_LEN;j++) {
+                y[j] = 0;
+            }
             fft.fft(x,y);
 
-            int indexForOne= (int) ((double)encodeFrequencyForOne/samplingRate);
-            int indexForZero= (int) ((double)encodeFrequencyForZero/samplingRate);
-            int argMaxIndex = argMax(x);
+            int indexForOne= (int) ((double)encodeFrequencyForOne/samplingRate) * FFT_LEN;
+            int indexForZero= (int) ((double)encodeFrequencyForZero/samplingRate) * FFT_LEN;
+
+            double[] z =new double[FFT_LEN];
+            for(int j=0;j<FFT_LEN;j++){
+                z[j]=Math.pow(x[j],2)+Math.pow(y[j],2);
+            }
+
+            int argMaxIndex = argMax(z);
             if (Math.abs(argMaxIndex-indexForOne)<=1){
                 dataBits[i]=1;
+                continue;
             }
             if (Math.abs(argMaxIndex-indexForZero)<=1){
                 dataBits[i]=0;
+                continue;
             }
+            dataBits[i]=(byte) 0xff;
         }
 
         return dataBits;
@@ -450,6 +486,8 @@ public class MainActivity extends AppCompatActivity {
     public int checkPreamble(byte[] buffer){
         byte[] dataBits = signal2DataBits(buffer);
         int bitsLength = dataBits.length;
+
+        debugBytes(dataBits,false);
 
 //        int currentDataBitsIndex = 0;
         int currentPreambleBitsIndex= 0;
