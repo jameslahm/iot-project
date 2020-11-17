@@ -32,25 +32,35 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.util.BitSet;
 import java.util.Calendar;
 import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
-    // current File
+    // current File used to save wav file before send text
     File file;
-    // current mediaPlayer
+    // current mediaPlayer used to play wav
     MediaPlayer mediaPlayer;
 
     // Start Stop recv text button
     Button startRecvButton, stopRecvButton;
 
+    // send text button
+    Button sendTextButton;
+
+    // send text input
+    EditText sendTextInput;
+
     // send text using samplingRate and frequency
-    int generateSamplingRate =1000;
-    int generateFrequency =44100;
+    int samplingRate = 44100;
+    int encodeFrequencyForZero = 20000;
+    int encodeFrequencyForOne = 40000;
+    double windowTime = 0.010;
 
     // Recv
     // 48K sample frequency default;
-    int samplingRate = 48000;
+    int recvSamplingRate = 44100;
     // single channel
     int channelConfiguration = AudioFormat.CHANNEL_IN_MONO;
     // 16Bit
@@ -60,18 +70,22 @@ public class MainActivity extends AppCompatActivity {
     // audio record buffer size
     int bufferSize = 0;
 
+    // frame args
+    int PREAMBLE_BYTE_LENGTH = 1;
+    byte[] PREAMBLE_BYTES =  new byte[]{(byte)0x10101010};
+
+    int HEADER_BYTE_LENGTH = 1;
 
     // get permission
     private void GetPermission() {
         /*在此处插入运行时权限获取的代码*/
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)!=
-                PackageManager.PERMISSION_GRANTED||
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)!=
-                        PackageManager.PERMISSION_GRANTED||
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)!=
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) !=
+                PackageManager.PERMISSION_GRANTED ||
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
+                        PackageManager.PERMISSION_GRANTED ||
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) !=
                         PackageManager.PERMISSION_GRANTED
-        )
-        {
+        ) {
 
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.RECORD_AUDIO,
@@ -79,6 +93,7 @@ public class MainActivity extends AppCompatActivity {
                             Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
         }
     }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -87,8 +102,11 @@ public class MainActivity extends AppCompatActivity {
         GetPermission();
 
         // init button and input
-        startRecvButton = (Button)findViewById(R.id.start_recv_button);
-        stopRecvButton = (Button)findViewById(R.id.stop_recv_button);
+        startRecvButton = (Button) findViewById(R.id.start_recv_button);
+        stopRecvButton = (Button) findViewById(R.id.stop_recv_button);
+
+        sendTextButton = (Button) findViewById(R.id.send_text_button);
+        sendTextInput = (EditText) findViewById(R.id.send_text_input);
 
         // disable stopRecord
         stopRecvButton.setEnabled(false);
@@ -104,11 +122,8 @@ public class MainActivity extends AppCompatActivity {
                 Thread thread = new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        // get temp file name
-                        String name = Environment.getExternalStorageDirectory().getAbsolutePath()+"/raw.wav";
-                        System.out.println(name);
                         // start recv text
-                        startRecv(name);
+                        startRecv();
                     }
                 });
                 // start run
@@ -126,73 +141,84 @@ public class MainActivity extends AppCompatActivity {
                 startRecvButton.setEnabled(true);
             }
         });
+
+        sendTextButton.setOnClickListener(new View.OnClickListener() {
+            @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+            @Override
+            public void onClick(View v) {
+                // get input text
+                String text = sendTextInput.getText().toString();
+
+                // send input text
+                try {
+                    sendText(text);
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        });
     }
 
-    // generate .wav
-    public void generateWav(){
+    // TODO: support text segment
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    public void sendText(String text) throws UnsupportedEncodingException {
+        // first get utf-8 bytes
+        byte[] textBytes = text.getBytes("UTF8");
 
-//        System.out.println(length);
-//        byte[] wave= new byte[length*2];
-//        bufferSize=length*2;
-//        // generate data
-//        for(int i=0;i<length;i++) {
-//            double normalizedWaveValue = Math.sin(2 * Math.PI * generateFrequency * ((double)i / length) * generateTime + generatePhase);
-//            short waveValue = (short) (Short.MAX_VALUE * normalizedWaveValue);
-//            wave[i*2]=(byte) (waveValue & 0xFF);
-//            wave[i*2+1]=(byte) ((waveValue >> 8) & 0xFF);
-//        }
+        // add preamble and payload length
+        byte[] dataBytes = new byte[textBytes.length+PREAMBLE_BYTE_LENGTH+HEADER_BYTE_LENGTH];
 
-//        String filename=Environment.getExternalStorageDirectory().getAbsolutePath()+"/raw.wav";
-//        // create temp file
-//        file = new File(filename);
-//        //如果文件已经存在，就先删除再创建
-//        if (file.exists())
-//            file.delete();
-//        try {
-//            file.createNewFile();
-//        } catch (IOException e) {
-//            throw new IllegalStateException("未能创建" + file.toString());
-//        }
-//        try {
-//            OutputStream os = new FileOutputStream(file);
-//            BufferedOutputStream bos = new BufferedOutputStream(os);
-//            DataOutputStream dos = new DataOutputStream(bos);
-//            for(int i=0;i<wave.length;i++){
-//                dos.write(wave[i]);
-//            }
-//            dos.close();
-//        } catch (Throwable t) {
-//            Log.e("MainActivity", "录音失败");
-//        }
-//        Date now = Calendar.getInstance().getTime();
-//        System.out.println(now);
-//        // using time as file name
-//        String filepath =Environment.getExternalStorageDirectory().getAbsolutePath()+"/"+now.toString()+".wav";
-//        // write to .wav
-//        copyWaveFile(filename,filepath,generateSamplingRate,bufferSize);
-//        if(mediaPlayer!=null){
-//            mediaPlayer.stop();
-//            mediaPlayer.release();
-//            mediaPlayer=null;
-//        }
-//        // setup mediaPlayer
-//        mediaPlayer=new MediaPlayer();
-//        try {
-//            File file = new File(filepath);
-//            FileInputStream inputStream = new FileInputStream(file);
-//            mediaPlayer.setDataSource(inputStream.getFD());
-//            mediaPlayer.prepare();
-//            inputStream.close();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+        // copy payload to dataBytes
+        System.arraycopy(textBytes,0,dataBytes,PREAMBLE_BYTE_LENGTH+HEADER_BYTE_LENGTH,textBytes.length);
+        // add preamble
+        for (int i=0;i<PREAMBLE_BYTE_LENGTH;i++){
+            dataBytes[i]=PREAMBLE_BYTES[i];
+        }
+        // add header
+        for (int i=PREAMBLE_BYTE_LENGTH;i<HEADER_BYTE_LENGTH+PREAMBLE_BYTE_LENGTH;i++){
+            dataBytes[i]=(byte) textBytes.length;
+        }
 
+        // construct bit data
+        byte[] dataBits = new byte[dataBytes.length*8];
+        for (int i=0; i<dataBytes.length*8; i++) {
+            if ((dataBytes[i/8]&(1<<(7-(i%8)))) > 0) {
+                dataBits[i]=1;
+            }
+            else{
+                dataBits[i]=0;
+            }
+        }
+
+        // save bits to wav file
+        generateWav(dataBits);
+
+        // start play (send data)
+        mediaPlayer.start();
+        sendTextButton.setEnabled(false);
     }
 
-    // start record
-    public void startRecv(String name) {
+    // save bits to wav file
+    public void generateWav(byte[] dataBits) {
+        // FSK
+        int totalLength = (int)(dataBits.length*windowTime*samplingRate);
+        byte[] wave= new byte[totalLength*2];
+        for(int i=0;i<dataBits.length;i++) {
+            int frequency = dataBits[i]==1 ? encodeFrequencyForOne : encodeFrequencyForZero;
+            int base = (int)(i*windowTime*samplingRate)*2;
+            for(int j=0;j<windowTime*samplingRate;j++){
+                double normalizedWaveValue = Math.sin(2 * Math.PI * frequency * ((double)j /(samplingRate)));
+                short waveValue = (short) (Short.MAX_VALUE * normalizedWaveValue);
+                wave[base+j*2]=(byte) (waveValue & 0xFF);
+                wave[base+j*2+1]=(byte) ((waveValue >> 8) & 0xFF);
+            }
+        }
 
-        file = new File(name);
+
+        // save temp file
+        String filename=Environment.getExternalStorageDirectory().getAbsolutePath()+"/raw.wav";
+        file = new File(filename);
         if (file.exists())
             file.delete();
         try {
@@ -204,9 +230,51 @@ public class MainActivity extends AppCompatActivity {
             OutputStream os = new FileOutputStream(file);
             BufferedOutputStream bos = new BufferedOutputStream(os);
             DataOutputStream dos = new DataOutputStream(bos);
+            for(int i=0;i<wave.length;i++){
+                dos.write(wave[i]);
+            }
+            dos.close();
+        } catch (Throwable t) {
+            Log.e("MainActivity", "保存失败");
+        }
+        Date now = Calendar.getInstance().getTime();
+        System.out.println(now);
+        // using time as file name
+        String filepath =Environment.getExternalStorageDirectory().getAbsolutePath()+"/"+now.toString()+".wav";
+        // write to .wav
+        copyWaveFile(filename,filepath,samplingRate,bufferSize);
+        if(mediaPlayer!=null){
+            mediaPlayer.stop();
+            mediaPlayer.release();
+            mediaPlayer=null;
+        }
+        // setup mediaPlayer
+        mediaPlayer=new MediaPlayer();
+        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            @Override
+            public void onCompletion(MediaPlayer mp) {
+                sendTextButton.setEnabled(true);
+            }
+
+        });
+        try {
+            File file = new File(filepath);
+            FileInputStream inputStream = new FileInputStream(file);
+            mediaPlayer.setDataSource(inputStream.getFD());
+            mediaPlayer.prepare();
+            inputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    // start record
+    public void startRecv() {
+        try {
             // get buffer size
-            bufferSize = AudioRecord.getMinBufferSize(samplingRate,channelConfiguration , audioEncoding);
-            AudioRecord audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, samplingRate, channelConfiguration, audioEncoding, bufferSize);
+            bufferSize = AudioRecord.getMinBufferSize(recvSamplingRate, channelConfiguration, audioEncoding);
+            AudioRecord audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, recvSamplingRate, channelConfiguration, audioEncoding, bufferSize);
 
             byte[] buffer = new byte[bufferSize];
             // start record
@@ -218,18 +286,15 @@ public class MainActivity extends AppCompatActivity {
             while (isRecving) {
                 int bufferReadResult = audioRecord.read(buffer, 0, bufferSize);
                 for (int i = 0; i < bufferReadResult; i++) {
-                    dos.write(buffer[i]);
                 }
             }
             audioRecord.stop();
-            dos.close();
         } catch (Throwable t) {
             Log.e("MainActivity", "录音失败");
         }
     }
 
-    private void copyWaveFile(String inFileName, String outFileName,int samplingRate,int bufferSize)
-    {
+    private void copyWaveFile(String inFileName, String outFileName, int samplingRate, int bufferSize) {
         System.out.println(inFileName);
         System.out.println(outFileName);
         FileInputStream in = null;
@@ -243,8 +308,7 @@ public class MainActivity extends AppCompatActivity {
         long byteRate = 16 * samplingRate * channels / 8;
 
         byte[] data = new byte[bufferSize];
-        try
-        {
+        try {
             in = new FileInputStream(inFileName);
             out = new FileOutputStream(outFileName);
             // get real data length
@@ -253,17 +317,14 @@ public class MainActivity extends AppCompatActivity {
             // write .wav header
             writeWaveFileHeader(out, totalAudioLen, totalDataLen, longSampleRate, channels, byteRate);
             // write raw data to .wav
-            while(in.read(data) != -1)
-            {
+            while (in.read(data) != -1) {
                 out.write(data);
             }
             in.close();
             out.close();
-        } catch (FileNotFoundException e)
-        {
+        } catch (FileNotFoundException e) {
             e.printStackTrace();
-        } catch (IOException e)
-        {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -320,7 +381,6 @@ public class MainActivity extends AppCompatActivity {
 
         out.write(header, 0, 44);
     }
-
 
 
 }
