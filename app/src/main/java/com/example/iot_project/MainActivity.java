@@ -33,6 +33,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Array;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Calendar;
 import java.util.Date;
@@ -52,15 +55,16 @@ public class MainActivity extends AppCompatActivity {
     // send text input
     EditText sendTextInput;
 
+    // show recv text
+    EditText recvTextInput;
+
     // send text using samplingRate and frequency
     int samplingRate = 44100;
     int encodeFrequencyForZero = 20000;
     int encodeFrequencyForOne = 40000;
     double windowTime = 0.010;
+    int windowWidth = (int)(windowTime * samplingRate);
 
-    // Recv
-    // 48K sample frequency default;
-    int recvSamplingRate = 44100;
     // single channel
     int channelConfiguration = AudioFormat.CHANNEL_IN_MONO;
     // 16Bit
@@ -73,8 +77,20 @@ public class MainActivity extends AppCompatActivity {
     // frame args
     int PREAMBLE_BYTE_LENGTH = 1;
     byte[] PREAMBLE_BYTES =  new byte[]{(byte)0x10101010};
+    byte[] PREAMBLE_BITS = new byte[]{1,0,1,0,1,0,1,0};
 
     int HEADER_BYTE_LENGTH = 1;
+
+    FFT fft;
+
+    int FFT_LEN = 512;
+
+    // status
+    boolean isPreamble = false;
+    int payloadLength = -1;
+    byte[] payload;
+    int payloadBase=0;
+
 
     // get permission
     private void GetPermission() {
@@ -101,6 +117,10 @@ public class MainActivity extends AppCompatActivity {
 
         GetPermission();
 
+//        fft = new FFT((int)(windowTime * samplingRate));
+
+        fft = new FFT(FFT_LEN);
+
         // init button and input
         startRecvButton = (Button) findViewById(R.id.start_recv_button);
         stopRecvButton = (Button) findViewById(R.id.stop_recv_button);
@@ -120,6 +140,7 @@ public class MainActivity extends AppCompatActivity {
                 startRecvButton.setEnabled(false);
 
                 Thread thread = new Thread(new Runnable() {
+                    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
                     @Override
                     public void run() {
                         // start recv text
@@ -224,6 +245,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             file.createNewFile();
         } catch (IOException e) {
+            System.out.println(e.getMessage());
             throw new IllegalStateException("未能创建" + file.toString());
         }
         try {
@@ -270,13 +292,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // start record
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     public void startRecv() {
         try {
             // get buffer size
-            bufferSize = AudioRecord.getMinBufferSize(recvSamplingRate, channelConfiguration, audioEncoding);
-            AudioRecord audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, recvSamplingRate, channelConfiguration, audioEncoding, bufferSize);
+            bufferSize = AudioRecord.getMinBufferSize(samplingRate, channelConfiguration, audioEncoding);
+            AudioRecord audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, samplingRate, channelConfiguration, audioEncoding, bufferSize);
 
             byte[] buffer = new byte[bufferSize];
+            int base = 0;
+
             // start record
             audioRecord.startRecording();
 
@@ -284,10 +309,29 @@ public class MainActivity extends AppCompatActivity {
 
             // continue reading data
             while (isRecving) {
-                int bufferReadResult = audioRecord.read(buffer, 0, bufferSize);
-                // check if preamble
-                checkPreamble(buffer);
+                int bufferReadResult = audioRecord.read(buffer, base, bufferSize -base);
+                base += bufferReadResult;
 
+                if(isPreamble){
+                    byte[] temp = Arrays.copyOfRange(buffer,0,base);
+                    int checkIndex = processSignal(temp);
+                    byte[] totalBuffer = new byte[bufferSize];
+                    System.arraycopy(buffer,checkIndex,totalBuffer,0,base-checkIndex);
+                    base -= checkIndex;
+                    buffer = totalBuffer;
+                    continue;
+                }
+                else{
+                    byte[] temp = Arrays.copyOfRange(buffer,0,base);
+                    // check if preamble
+                    int checkIndex = checkPreamble(temp);
+
+                    byte[] totalBuffer = new byte[bufferSize];
+                    System.arraycopy(buffer,checkIndex,totalBuffer,0,base-checkIndex);
+                    base -= checkIndex;
+
+                    buffer = totalBuffer;
+                }
             }
             audioRecord.stop();
         } catch (Throwable t) {
@@ -295,7 +339,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void checkPreamble(byte[] buffer){
+    byte[] signal2DataBits(byte[] buffer){
         // transfer buffer to signal data
         double[] signalData = new double[buffer.length/2];
         for(int i=0;i<buffer.length/2;i++){
@@ -305,6 +349,124 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
+        int bitsLength = signalData.length / windowWidth;
+        byte[] dataBits = new byte[bitsLength];
+
+        for(int i=0;i<bitsLength;i++){
+            double[] x =new double[FFT_LEN];
+            System.arraycopy(signalData,i*windowWidth,x,0,windowWidth);
+            double[] y = new double[FFT_LEN];
+            fft.fft(x,y);
+
+            int indexForOne= (int) ((double)encodeFrequencyForOne/samplingRate);
+            int indexForZero= (int) ((double)encodeFrequencyForZero/samplingRate);
+            int argMaxIndex = argMax(x);
+            if (Math.abs(argMaxIndex-indexForOne)<=1){
+                dataBits[i]=1;
+            }
+            if (Math.abs(argMaxIndex-indexForZero)<=1){
+                dataBits[i]=0;
+            }
+        }
+
+        return dataBits;
+    }
+
+    byte[] bits2Byte(byte[] bits){
+        byte[] dataBytes = new byte[bits.length/ 8];
+        int byteValue = 0;
+        for (int index = 0; index < bits.length; index++) {
+
+            byteValue = (byteValue << 1) | bits[index];
+
+            if (index %8 == 7) {
+                dataBytes[index / 8] = (byte) byteValue;
+                byteValue = 0;
+            }
+        }
+        return dataBytes;
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    int processSignal(byte[] buffer){
+        byte[] dataBits = signal2DataBits(buffer);
+        int bitsLength = dataBits.length;
+
+        // init payloadLength and payloadBase
+        if(payloadBase==-1) {
+            if (bitsLength >= 8) {
+                byte[] dataBytes = bits2Byte(dataBits);
+                payloadLength = dataBytes[0];
+                payload = new byte[payloadLength];
+                payloadBase = 0;
+                if (dataBytes.length - 1 < payloadLength) {
+                    System.arraycopy(dataBytes, 1, payload, payloadBase, dataBytes.length - 1);
+                    payloadBase += dataBytes.length - 1;
+                    return dataBytes.length * 8 * windowWidth * 2;
+                } else {
+                    System.arraycopy(dataBytes, 1, payload, payloadBase, payloadLength);
+                    payloadBase = -1;
+                    isPreamble = false;
+                    showRecvText();
+                    return (payloadLength + 1) * 8 * windowWidth * 2;
+                }
+            }
+        }
+        else{
+            byte[] dataBytes = bits2Byte(dataBits);
+            if (dataBytes.length < payloadLength - payloadBase) {
+                System.arraycopy(dataBytes, 0, payload, payloadBase, dataBytes.length);
+                payloadBase += dataBytes.length ;
+                return dataBytes.length * 8 * windowWidth * 2;
+            } else {
+                System.arraycopy(dataBytes, 0, payload, payloadBase, payloadLength-payloadBase);
+                payloadBase = -1;
+                isPreamble = false;
+                showRecvText();
+                return (payloadLength-payloadBase) * 8 * windowWidth * 2;
+            }
+        }
+
+        return -1;
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    void showRecvText(){
+        String text = new String(payload, StandardCharsets.UTF_8);
+        recvTextInput.setText(text);
+    }
+
+    int argMax(double [] arr) {
+        double max = arr[0];
+        int maxIdx = 0;
+        for(int i = 1; i < arr.length; i++) {
+            if(arr[i] > max) {
+                max = arr[i];
+                maxIdx = i;
+            }
+        }
+        return maxIdx;
+    }
+
+    public int checkPreamble(byte[] buffer){
+        byte[] dataBits = signal2DataBits(buffer);
+        int bitsLength = dataBits.length;
+
+//        int currentDataBitsIndex = 0;
+        int currentPreambleBitsIndex= 0;
+        for(int i=0;i<bitsLength;i++){
+            if(dataBits[i]==PREAMBLE_BITS[currentPreambleBitsIndex]){
+                currentPreambleBitsIndex++;
+            }else{
+                currentPreambleBitsIndex=0;
+            }
+        }
+
+        if(currentPreambleBitsIndex == 8){
+            isPreamble=true;
+        }
+
+        return (bitsLength-currentPreambleBitsIndex)*windowWidth*2;
     }
 
     private void copyWaveFile(String inFileName, String outFileName, int samplingRate, int bufferSize) {

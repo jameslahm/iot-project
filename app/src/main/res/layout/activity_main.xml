@@ -36,8 +36,8 @@
 
     <Button
         android:id="@+id/start_recv_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="129dp"
+        android:layout_height="54dp"
         android:layout_marginTop="196dp"
         android:text="@string/start_recv_button"
         app:layout_constraintEnd_toEndOf="parent"
@@ -47,8 +47,8 @@
 
     <Button
         android:id="@+id/stop_recv_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="118dp"
+        android:layout_height="52dp"
         android:layout_marginTop="196dp"
         android:text="@string/stop_recv_button"
         app:layout_constraintEnd_toEndOf="parent"
