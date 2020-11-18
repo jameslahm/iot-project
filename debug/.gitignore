@@ -2,3 +2,4 @@ venv
 *.png
 *.wav
 .vscode
+*.class
