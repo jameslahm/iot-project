@@ -529,7 +529,7 @@ public class MainActivity extends AppCompatActivity {
         byte[] dataBytes = bits2Byte(dataBits);
 
         if (payloadBase == -1) {
-            payloadLength = dataBytes[0];
+            payloadLength = (int)dataBytes[0]  & 0xff;
             System.out.println("PayloadLength: " + payloadLength);
             if (payloadLength < 0) {
                 isPreamble = false;
