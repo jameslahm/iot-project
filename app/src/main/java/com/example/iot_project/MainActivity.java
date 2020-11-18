@@ -395,7 +395,7 @@ public class MainActivity extends AppCompatActivity {
                         System.arraycopy(temp, checkIndex, payloadBitsBuffer, 0, temp.length - checkIndex);
 
                         base = 0;
-                    } else{
+                    } else {
                         System.arraycopy(temp, checkIndex, buffer, 0, temp.length - checkIndex);
                         base = temp.length - checkIndex;
                     }
@@ -437,6 +437,7 @@ public class MainActivity extends AppCompatActivity {
         int bitsLength = signalData.length / windowWidth;
         byte[] dataBits = new byte[bitsLength];
 
+        boolean flag = false;
         for (int i = 0; i < bitsLength; i++) {
             double[] x = new double[FFT_LEN];
             System.arraycopy(signalData, i * windowWidth, x, 0, windowWidth);
@@ -470,11 +471,13 @@ public class MainActivity extends AppCompatActivity {
             if (Math.abs(argMaxIndex - indexForOne) <= 2 && z[argMaxIndex] >= 200) {
                 dataBits[i] = 1;
 //                System.out.println(dataBits[i]);
-                Log.d("FFT", String.valueOf(dataBits[i]));
+//                Log.d("FFT", String.valueOf(dataBits[i]));
+                flag = true;
             } else if (Math.abs(argMaxIndex - indexForZero) <= 2 && z[argMaxIndex] >= 200) {
                 dataBits[i] = 0;
 //                System.out.println(dataBits[i]);
-                Log.d("FFT", String.valueOf(dataBits[i]));
+//                Log.d("FFT", String.valueOf(dataBits[i]));
+                flag = true;
             } else {
                 if (isPreamble) {
                     if (z[indexForOne] >= z[indexForZero]) {
@@ -483,7 +486,8 @@ public class MainActivity extends AppCompatActivity {
                         dataBits[i] = 0;
                     }
 //                    System.out.println("Attention "+ dataBits[i]);
-                    Log.d("FFT","Attention "+ dataBits[i]);
+                    Log.d("FFT", "Attention " + dataBits[i]);
+                    flag = true;
                 } else {
                     dataBits[i] = (byte) 0xff;
                 }
@@ -491,6 +495,8 @@ public class MainActivity extends AppCompatActivity {
             }
 //            System.out.println(dataBits[i]);
         }
+
+        if (flag) Log.d("FFT", Arrays.toString(dataBits));
 
         return dataBits;
     }
@@ -524,7 +530,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (payloadBase == -1) {
             payloadLength = dataBytes[0];
-            System.out.println("PayloadLength: "+payloadLength);
+            System.out.println("PayloadLength: " + payloadLength);
             if (payloadLength < 0) {
                 isPreamble = false;
                 return 0;
