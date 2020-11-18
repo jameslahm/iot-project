@@ -143,8 +143,20 @@ public class MainActivity extends AppCompatActivity {
                     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
                     @Override
                     public void run() {
+
+                        String name = getExternalFilesDir("").getAbsolutePath()+"/raw_recv.wav";
+                        System.out.println(name);
+
                         // start recv text
-                        startRecv();
+                        startRecv(name);
+
+                        // debug
+                        Date now = Calendar.getInstance().getTime();
+                        System.out.println(now);
+                        // using time as file name
+                        String filepath =getExternalFilesDir("").getAbsolutePath()+"/"+now.toString()+".wav";
+                        // write to .wav
+                        copyWaveFile(name, filepath,samplingRate,bufferSize);
                     }
                 });
                 // start run
@@ -313,8 +325,21 @@ public class MainActivity extends AppCompatActivity {
 
     // start record
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
-    public void startRecv() {
+    public void startRecv(String name) {
+        file = new File(name);
+        if (file.exists())
+            file.delete();
         try {
+            file.createNewFile();
+        } catch (IOException e) {
+            throw new IllegalStateException("未能创建" + file.toString());
+        }
+
+        try {
+            OutputStream os = new FileOutputStream(file);
+            BufferedOutputStream bos = new BufferedOutputStream(os);
+            DataOutputStream dos = new DataOutputStream(bos);
+
             // get buffer size
             bufferSize = AudioRecord.getMinBufferSize(samplingRate, channelConfiguration, audioEncoding);
             AudioRecord audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, samplingRate, channelConfiguration, audioEncoding, bufferSize);
@@ -330,6 +355,10 @@ public class MainActivity extends AppCompatActivity {
             // continue reading data
             while (isRecving) {
                 int bufferReadResult = audioRecord.read(buffer, base, bufferSize -base);
+                for (int i = base; i < base+bufferReadResult; i++) {
+                    dos.write(buffer[i]);
+                }
+
                 base += bufferReadResult;
 
                 if(isPreamble){
@@ -346,6 +375,7 @@ public class MainActivity extends AppCompatActivity {
                     // check if preamble
                     int checkIndex = checkPreamble(temp);
 
+
                     byte[] totalBuffer = new byte[bufferSize];
                     System.arraycopy(buffer,checkIndex,totalBuffer,0,base-checkIndex);
                     base -= checkIndex;
@@ -354,6 +384,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
             audioRecord.stop();
+            dos.close();
         } catch (Throwable t) {
             Log.e("MainActivity", "录音失败");
         }
@@ -363,9 +394,9 @@ public class MainActivity extends AppCompatActivity {
         // transfer buffer to signal data
         double[] signalData = new double[buffer.length/2];
         for(int i=0;i<buffer.length/2;i++){
-            int temp = buffer[2 * i];
-            temp = ((int)buffer[2*i+1]) << 8 + temp;
+            short temp = (short) (((short)buffer[2*i+1]) << 8 + buffer[2*i]);
             signalData[i] = (double)temp / Short.MAX_VALUE;
+//            System.out.println(signalData[i]);
         }
 
 
@@ -375,6 +406,8 @@ public class MainActivity extends AppCompatActivity {
         for(int i=0;i<bitsLength;i++){
             double[] x =new double[FFT_LEN];
             System.arraycopy(signalData,i*windowWidth,x,0,windowWidth);
+//            System.out.println(windowWidth);
+//            System.out.println(FFT_LEN);
             for(int j=windowWidth;j<FFT_LEN;j++){
                 x[j]=0;
             }
@@ -400,11 +433,11 @@ public class MainActivity extends AppCompatActivity {
             int argMaxIndex = argMax(z);
 //            System.out.println(argMaxIndex);
 
-            if (Math.abs(argMaxIndex-indexForOne)<=2){
+            if (Math.abs(argMaxIndex-indexForOne)<=2 && z[argMaxIndex]>=100){
                 dataBits[i]=1;
                 System.out.println(dataBits[i]);
             }
-            else if (Math.abs(argMaxIndex-indexForZero)<=2){
+            else if (Math.abs(argMaxIndex-indexForZero)<=2 && z[argMaxIndex]>=100){
                 dataBits[i]=0;
                 System.out.println(dataBits[i]);
             }
@@ -512,7 +545,6 @@ public class MainActivity extends AppCompatActivity {
         if(currentPreambleBitsIndex == 8){
             isPreamble=true;
         }
-
         return (bitsLength-currentPreambleBitsIndex)*windowWidth*2;
     }
 
