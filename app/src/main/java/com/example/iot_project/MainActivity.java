@@ -97,6 +97,10 @@ public class MainActivity extends AppCompatActivity {
     int payloadBase = -1;
     byte[] payloadBitsBuffer = new byte[0];
 
+    // FSK
+    byte[] encodeSignalForOne;
+    byte[] encodeSignalForZero;
+
 
     // get permission
     private void GetPermission() {
@@ -116,6 +120,24 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    void initFSK(){
+        encodeSignalForOne =  new byte[windowWidth *2];
+        encodeSignalForZero = new byte[windowWidth *2];
+
+        for(int j=0;j<windowWidth;j++){
+            double normalizedWaveValue = Math.sin(2 * Math.PI * encodeFrequencyForOne * ((double) j / (samplingRate)));
+            short waveValue = (short) (Short.MAX_VALUE * normalizedWaveValue);
+            encodeSignalForOne[j * 2] = (byte) (waveValue & 0xFF);
+            encodeSignalForOne[j * 2 + 1] = (byte) ((waveValue >> 8) & 0xFF);
+        }
+        for(int j=0;j<windowWidth;j++){
+            double normalizedWaveValue = Math.sin(2 * Math.PI * encodeFrequencyForZero * ((double) j / (samplingRate)));
+            short waveValue = (short) (Short.MAX_VALUE * normalizedWaveValue);
+            encodeSignalForZero[j * 2] = (byte) (waveValue & 0xFF);
+            encodeSignalForZero[j * 2 + 1] = (byte) ((waveValue >> 8) & 0xFF);
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -123,7 +145,8 @@ public class MainActivity extends AppCompatActivity {
 
         GetPermission();
 
-//        fft = new FFT((int)(windowTime * samplingRate));
+        // init FSK
+        initFSK();
 
         FFT_LEN = getMin2Pow((int) (windowTime * samplingRate));
         fft = new FFT(FFT_LEN);
@@ -271,19 +294,18 @@ public class MainActivity extends AppCompatActivity {
         int totalLength = (int) (dataBits.length * windowTime * samplingRate);
         byte[] wave = new byte[totalLength * 2];
         for (int i = 0; i < dataBits.length; i++) {
-            int frequency;
+            int base = (int) (i * windowWidth) * 2;
             if (dataBits[i] == 1) {
-                frequency = encodeFrequencyForOne;
+                System.arraycopy(encodeSignalForOne,0,wave,base,windowWidth*2);
             } else {
-                frequency = encodeFrequencyForZero;
+                System.arraycopy(encodeSignalForZero,0,wave,base,windowWidth*2);
             }
-            int base = (int) (i * windowTime * samplingRate) * 2;
-            for (int j = 0; j < windowTime * samplingRate; j++) {
-                double normalizedWaveValue = Math.sin(2 * Math.PI * frequency * ((double) j / (samplingRate)));
-                short waveValue = (short) (Short.MAX_VALUE * normalizedWaveValue);
-                wave[base + j * 2] = (byte) (waveValue & 0xFF);
-                wave[base + j * 2 + 1] = (byte) ((waveValue >> 8) & 0xFF);
-            }
+//            for (int j = 0; j < windowWidth; j++) {
+//                double normalizedWaveValue = Math.sin(2 * Math.PI * frequency * ((double) j / (samplingRate)));
+//                short waveValue = (short) (Short.MAX_VALUE * normalizedWaveValue);
+//                wave[base + j * 2] = (byte) (waveValue & 0xFF);
+//                wave[base + j * 2 + 1] = (byte) ((waveValue >> 8) & 0xFF);
+//            }
         }
 
         // save temp file
@@ -396,6 +418,7 @@ public class MainActivity extends AppCompatActivity {
 
                         base = 0;
                     } else {
+                        payloadBitsBuffer = new byte[0];
                         System.arraycopy(temp, checkIndex, buffer, 0, temp.length - checkIndex);
                         base = temp.length - checkIndex;
                     }
@@ -480,7 +503,7 @@ public class MainActivity extends AppCompatActivity {
                 flag = true;
             } else {
                 if (isPreamble) {
-                    if (z[indexForOne] >= z[indexForZero]) {
+                    if (z[indexForOne] > z[indexForZero]) {
                         dataBits[i] = 1;
                     } else {
                         dataBits[i] = 0;
@@ -600,12 +623,16 @@ public class MainActivity extends AppCompatActivity {
         for (int i = 0; i < bitsLength; i++) {
             if (dataBits[i] == PREAMBLE_BITS[currentPreambleBitsIndex]) {
                 currentPreambleBitsIndex++;
+                Log.d("PreambleBitsIndex", String.valueOf(currentPreambleBitsIndex));
                 if (currentPreambleBitsIndex == 8) {
                     isPreamble = true;
                     return (i + 1) * windowWidth * 2;
                 }
             } else {
                 currentPreambleBitsIndex = 0;
+                if(dataBits[i]==PREAMBLE_BITS[0]){
+                    currentPreambleBitsIndex++;
+                }
             }
         }
 
