@@ -66,6 +66,11 @@ public class MainActivity extends AppCompatActivity {
     int ThresholdDownFrequency = 9000;
     int ThresholdUpFrequency = 21000;
 
+    int OneThresholdDownFrequency = 8000;
+    int OneThresholdUpFrequency = 12000;
+    int ZeroThresholdUpFrequency = 22000;
+    int ZeroThresholdDownFrequency = 18000;
+
     double windowTime = 0.010;
     int windowWidth = (int) (windowTime * samplingRate);
 
@@ -87,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
 
     FFT fft;
 
-    int currentPreambleBitsIndex = 0;
+    byte[] preambleBits = new byte[]{-1, -1, -1, -1, -1, -1, -1, -1};
     int FFT_LEN = 512;
 
     // status
@@ -238,15 +243,17 @@ public class MainActivity extends AppCompatActivity {
 //        return 512;
     }
 
-    void debugBytes(byte[] buffer, boolean flag) {
+    void debugBytes(byte[] buffer) {
         for (int i = 0; i < buffer.length; i++) {
-            if (flag) {
-                System.out.println(i + String.format(" 0x%2x", buffer[i]));
-                System.out.println(i + " " + String.format("%8s", Integer.toBinaryString(buffer[i] & 0xFF)).replace(' ', '0'));
-            } else {
-                System.out.println(i + String.format(" 0x%2x", buffer[i]));
-            }
+            System.out.println(i + " " + String.format("%8s", Integer.toBinaryString(buffer[i] & 0xFF)).replace(' ', '0'));
         }
+    }
+
+    void debugBits(byte[] bits) {
+        for (int i = 0; i < bits.length; i++) {
+            System.out.print(bits[i] + " ");
+        }
+        System.out.println();
     }
 
     // TODO: support text segment
@@ -269,7 +276,7 @@ public class MainActivity extends AppCompatActivity {
             dataBytes[i] = (byte) textBytes.length;
         }
 
-        debugBytes(dataBytes, true);
+        debugBytes(dataBytes);
 
         // construct bit data
         byte[] dataBits = new byte[dataBytes.length * 8];
@@ -300,12 +307,6 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 System.arraycopy(encodeSignalForZero, 0, wave, base, windowWidth * 2);
             }
-//            for (int j = 0; j < windowWidth; j++) {
-//                double normalizedWaveValue = Math.sin(2 * Math.PI * frequency * ((double) j / (samplingRate)));
-//                short waveValue = (short) (Short.MAX_VALUE * normalizedWaveValue);
-//                wave[base + j * 2] = (byte) (waveValue & 0xFF);
-//                wave[base + j * 2 + 1] = (byte) ((waveValue >> 8) & 0xFF);
-//            }
         }
 
         // save temp file
@@ -465,8 +466,7 @@ public class MainActivity extends AppCompatActivity {
         for (int i = 0; i < bitsLength; i++) {
             double[] x = new double[FFT_LEN];
             System.arraycopy(signalData, i * windowWidth, x, 0, windowWidth);
-//            System.out.println(windowWidth);
-//            System.out.println(FFT_LEN);
+
             for (int j = windowWidth; j < FFT_LEN; j++) {
                 x[j] = 0;
             }
@@ -479,29 +479,48 @@ public class MainActivity extends AppCompatActivity {
             int indexForOne = (int) ((double) encodeFrequencyForOne / samplingRate * FFT_LEN);
             int indexForZero = (int) ((double) encodeFrequencyForZero / samplingRate * FFT_LEN);
 
-//            System.out.println(indexForOne);
-//            System.out.println(indexForZero);
-
             double[] z = new double[FFT_LEN];
 
             for (int j = 0; j < FFT_LEN; j++) {
                 z[j] = Math.pow(x[j], 2) + Math.pow(y[j], 2);
-//                System.out.println(z[j]);
             }
 
-            int argMaxIndex = argMax(z, (int) ((double) ThresholdDownFrequency / samplingRate * FFT_LEN), (int) ((double) ThresholdUpFrequency / samplingRate * FFT_LEN));
-//            System.out.println(argMaxIndex);
 
-            if (( Math.abs(argMaxIndex - indexForOne) <= 4) && (z[argMaxIndex] >= 100)) {
+            int argMaxIndex = argMax(z, (int) ((double) ThresholdDownFrequency / samplingRate * FFT_LEN), (int) ((double) ThresholdUpFrequency / samplingRate * FFT_LEN));
+
+//            int argMaxZeroIndex = argMax(z, (int) ((double) ZeroThresholdDownFrequency / samplingRate * FFT_LEN), (int) ((double) ZeroThresholdUpFrequency / samplingRate * FFT_LEN));
+//
+//            int argMaxOneIndex = argMax(z, (int) ((double) OneThresholdDownFrequency / samplingRate * FFT_LEN), (int) ((double) OneThresholdUpFrequency / samplingRate * FFT_LEN));
+
+//            boolean isOneMax = Math.abs(argMaxOneIndex - indexForOne) <= 2;
+//            boolean isZeroMax = Math.abs(argMaxZeroIndex - indexForZero) <= 2;
+
+//            System.out.println("One " + isOneMax);
+//            System.out.println("Zero " + isZeroMax);
+
+//            if ((isOneMax && isZeroMax) || (!isOneMax && !isZeroMax)) {
+//                if (isPreamble) {
+//                    if (z[indexForOne] > z[indexForZero]) {
+//                        dataBits[i] = 1;
+//                    } else {
+//                        dataBits[i] = 0;
+//                    }
+//                } else {
+//                    dataBits[i] = (byte) 0xff;
+//                }
+//            } else if (isOneMax) {
+//                dataBits[i] = 1;
+//                System.out.println(dataBits[i]);
+//            } else {
+//                dataBits[i] = 0;
+//                System.out.println(dataBits[i]);
+//            }
+
+
+            if (Math.abs(argMaxIndex - indexForOne) <= 4 && z[argMaxIndex] >= 200) {
                 dataBits[i] = 1;
-//                System.out.println(dataBits[i]);
-//                Log.d("FFT", String.valueOf(dataBits[i]));
-                flag = true;
-            } else if ((Math.abs(argMaxIndex - indexForZero) <= 4) && (z[argMaxIndex] >= 100)) {
+            } else if (Math.abs(argMaxIndex - indexForZero) <= 4 && z[argMaxIndex] >= 200) {
                 dataBits[i] = 0;
-//                System.out.println(dataBits[i]);
-//                Log.d("FFT", String.valueOf(dataBits[i]));
-                flag = true;
             } else {
                 if (isPreamble) {
                     if (z[indexForOne] > z[indexForZero]) {
@@ -509,18 +528,12 @@ public class MainActivity extends AppCompatActivity {
                     } else {
                         dataBits[i] = 0;
                     }
-//                    System.out.println("Attention "+ dataBits[i]);
-                    Log.d("FFT", "Attention " + dataBits[i]);
-                    flag = true;
+                    System.out.println("Attention " + i + " " + dataBits[i]);
                 } else {
                     dataBits[i] = (byte) 0xff;
                 }
-//                System.out.println("Attention "+ dataBits[i]);
             }
-//            System.out.println(dataBits[i]);
         }
-
-        if (flag) Log.d("FFT", Arrays.toString(dataBits));
 
         return dataBits;
     }
@@ -551,6 +564,7 @@ public class MainActivity extends AppCompatActivity {
 
         // init payloadLength and payloadBase
         byte[] dataBytes = bits2Byte(dataBits);
+        debugBytes(dataBytes);
 
         if (payloadBase == -1) {
             payloadLength = (int) dataBytes[0] & 0xff;
@@ -582,7 +596,7 @@ public class MainActivity extends AppCompatActivity {
                 int res = (payloadLength - payloadBase) * 8 * windowWidth * 2;
                 payloadBase = -1;
                 isPreamble = false;
-                currentPreambleBitsIndex = 0;
+                preambleBits = new byte[]{-1, -1, -1, -1, -1, -1, -1, -1};
                 showRecvText();
                 return res;
             }
@@ -614,26 +628,43 @@ public class MainActivity extends AppCompatActivity {
         return maxIdx;
     }
 
+    public double corr(byte[] a, byte[] b) {
+        double res = 0;
+        double aMod = 0;
+        double bMod = 0;
+        for (int i = 0; i < a.length; i++) {
+            int aValue = (int) a[i];
+            int bValue = (int) b[i];
+            res += aValue * bValue;
+            aMod += Math.pow(aValue, 2);
+            bMod += Math.pow(bValue, 2);
+        }
+
+        aMod = Math.sqrt(aMod);
+        bMod = Math.sqrt(bMod);
+
+        return res / (aMod * bMod);
+    }
+
     public int checkPreamble(byte[] buffer) {
         byte[] dataBits = signal2DataBits(buffer);
         int bitsLength = dataBits.length;
 
-//        debugBytes(dataBits,false);
 
 //        int currentDataBitsIndex = 0;
         for (int i = 0; i < bitsLength; i++) {
-            if (dataBits[i] == PREAMBLE_BITS[currentPreambleBitsIndex]) {
-                currentPreambleBitsIndex++;
-                Log.d("PreambleBitsIndex", String.valueOf(currentPreambleBitsIndex));
-                if (currentPreambleBitsIndex == 8) {
-                    isPreamble = true;
-                    return (i + 1) * windowWidth * 2;
-                }
-            } else {
-                currentPreambleBitsIndex = 0;
-                if (dataBits[i] == PREAMBLE_BITS[0]) {
-                    currentPreambleBitsIndex++;
-                }
+            for (int j = 0; j < preambleBits.length - 1; j++) {
+                preambleBits[j] = preambleBits[j + 1];
+            }
+            preambleBits[preambleBits.length - 1] = dataBits[i];
+            double res = corr(preambleBits, PREAMBLE_BITS);
+            if (res >= 0.5 && res < 0.85) {
+                debugBits(preambleBits);
+            }
+            if (res >= 0.85) {
+                debugBits(preambleBits);
+                isPreamble = true;
+                return (i + 1) * windowWidth * 2;
             }
         }
 
