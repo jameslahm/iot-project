@@ -109,7 +109,7 @@ public class FFT {
 
         FileInputStream in;
         try {
-            in = new FileInputStream("example_recv.wav");
+            in = new FileInputStream("example7.wav");
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             return;
