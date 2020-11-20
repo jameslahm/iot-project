@@ -18,4 +18,6 @@
     <string name="recv_text_input">Recv Text</string>
     <string name="start_recv_button">Start Recv</string>
     <string name="stop_recv_button">Stop Recv</string>
+    <string name="start_locate">START LOCATE</string>
+    <string name="recv_locate">RECV LOCATE</string>
 </resources>

@@ -6,6 +6,17 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+    <Button
+        android:id="@+id/start_recv_locate"
+        android:layout_width="170dp"
+        android:layout_height="51dp"
+        android:layout_marginTop="268dp"
+        android:text="@string/recv_locate"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.863"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <EditText
         android:id="@+id/recv_text"
         android:layout_width="wrap_content"
@@ -64,6 +75,17 @@
         android:text="@string/send_text_button"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.115"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/start_locate"
+        android:layout_width="158dp"
+        android:layout_height="53dp"
+        android:layout_marginTop="268dp"
+        android:text="@string/start_locate"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.109"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 

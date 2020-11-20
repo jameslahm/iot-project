@@ -24,6 +24,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -34,7 +37,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.security.cert.TrustAnchor;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Calendar;
@@ -106,6 +112,21 @@ public class MainActivity extends AppCompatActivity {
     byte[] encodeSignalForOne;
     byte[] encodeSignalForZero;
 
+    // Locate
+    Button startLocateButton;
+    Button startRecvLocateButton;
+
+    boolean isLocateRecving = false;
+    boolean isLocateSending = false;
+
+    long TB1 = 0;
+    long TB3 = 0;
+
+    long TA3 = 0;
+    long TA1 = 0;
+
+    boolean isLocateSender = true;
+
 
     // get permission
     private void GetPermission() {
@@ -163,6 +184,37 @@ public class MainActivity extends AppCompatActivity {
         sendTextButton = (Button) findViewById(R.id.send_text_button);
         sendTextInput = (EditText) findViewById(R.id.send_text_input);
         recvTextInput = (EditText) findViewById(R.id.recv_text);
+
+        startLocateButton = (Button) findViewById(R.id.start_locate);
+        startRecvButton = (Button) findViewById(R.id.start_recv_locate);
+
+        startLocateButton.setOnClickListener(new View.OnClickListener() {
+            @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+            @Override
+            public void onClick(View v) {
+                startLocateButton.setEnabled(false);
+                // send input text
+                try {
+                    sendText("");
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
+
+                isLocateSender = true;
+                startRecvButton.setEnabled(false);
+                isLocateRecving = true;
+                startLocate();
+            }
+        });
+
+        startRecvLocateButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startRecvButton.setEnabled(false);
+                isLocateRecving = true;
+                startLocate();
+            }
+        });
 
         // disable stopRecord
         stopRecvButton.setEnabled(false);
@@ -227,6 +279,30 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+    }
+
+    public void startLocate() {
+        Thread thread = new Thread(new Runnable() {
+            @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+            @Override
+            public void run() {
+
+                String name = getExternalFilesDir("").getAbsolutePath() + "/raw_recv.wav";
+                System.out.println(name);
+                // start recv text
+                startRecv(name);
+
+                // debug
+                Date now = Calendar.getInstance().getTime();
+                System.out.println(now);
+                // using time as file name
+                String filepath = getExternalFilesDir("").getAbsolutePath() + "/" + now.toString() + ".wav";
+                // write to .wav
+                copyWaveFile(name, filepath, samplingRate, bufferSize);
+            }
+        });
+        // start run
+        thread.start();
     }
 
     int getMin2Pow(int n) {
@@ -411,7 +487,12 @@ public class MainActivity extends AppCompatActivity {
                     System.arraycopy(payloadBitsBuffer, 0, temp, 0, payloadBitsBuffer.length);
                     System.arraycopy(buffer, 0, temp, payloadBitsBuffer.length, base);
 
-                    int checkIndex = processSignal(temp);
+                    int checkIndex = 0;
+                    if (!isLocateRecving && !isLocateSending) {
+                        checkIndex = processSignal(temp);
+                    } else {
+                        processLocate();
+                    }
 
                     if (isPreamble) {
                         payloadBitsBuffer = new byte[temp.length - checkIndex];
@@ -448,6 +529,73 @@ public class MainActivity extends AppCompatActivity {
             Log.e("MainActivity", "录音失败");
         }
     }
+
+    public void processLocate() {
+        if (isLocateRecving) {
+            isPreamble = false;
+            isLocateRecving = false;
+            if (isLocateSender) {
+                TA1 = System.currentTimeMillis();
+                isLocateSending = true;
+            } else {
+                isLocateSending = true;
+                startLocate();
+
+                TB1 = System.currentTimeMillis();
+            }
+        } else {
+            isLocateSending = false;
+            isPreamble = false;
+            isRecving = false;
+
+            if (isLocateSender) {
+                TA3 = System.currentTimeMillis();
+                reportLocateToServer();
+            } else {
+                TB3 = System.currentTimeMillis();
+                reportLocateToServer();
+            }
+        }
+    }
+
+    void reportLocateToServer() {
+        try {
+            JSONObject body = new JSONObject();
+            String urlPath = "http://10.0.2.2:5000/locate/";
+            if(isLocateSender){
+                urlPath += "A";
+                body.put("TA1", TA1);
+                body.put("TA3", TA3);
+            }
+            else{
+                urlPath +="B";
+                body.put("TB1", TB1);
+                body.put("TB3", TB3);
+            }
+            URL url = new URL(urlPath);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setConnectTimeout(5000);
+            // 设置允许输出
+            conn.setDoOutput(true);
+            conn.setDoInput(true);
+            conn.setRequestMethod("POST");
+            // 设置contentType
+            conn.setRequestProperty("Content-Type", "application/json");
+            DataOutputStream os = new DataOutputStream(conn.getOutputStream());
+            String content = String.valueOf(body);
+            os.writeBytes(content);
+            os.flush();
+            os.close();
+            if (conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                conn.disconnect();
+            }
+        } catch (JSONException e) {
+            Log.e("Json Error", e.getMessage());
+        } catch (IOException io) {
+            Log.e("Url Error", io.getMessage());
+        }
+    }
+
 
     byte[] signal2DataBits(byte[] buffer) {
         // transfer buffer to signal data
@@ -569,9 +717,9 @@ public class MainActivity extends AppCompatActivity {
         if (payloadBase == -1) {
             payloadLength = (int) dataBytes[0] & 0xff;
             System.out.println("PayloadLength: " + payloadLength);
-            if (payloadLength <= 0) {
+            if (payloadLength == 0) {
                 isPreamble = false;
-                return 0;
+                return 8 * windowWidth * 2;
             }
             payload = new byte[payloadLength];
             payloadBase = 0;
