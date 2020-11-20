@@ -120,17 +120,17 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    void initFSK(){
-        encodeSignalForOne =  new byte[windowWidth *2];
-        encodeSignalForZero = new byte[windowWidth *2];
+    void initFSK() {
+        encodeSignalForOne = new byte[windowWidth * 2];
+        encodeSignalForZero = new byte[windowWidth * 2];
 
-        for(int j=0;j<windowWidth;j++){
+        for (int j = 0; j < windowWidth; j++) {
             double normalizedWaveValue = Math.sin(2 * Math.PI * encodeFrequencyForOne * ((double) j / (samplingRate)));
             short waveValue = (short) (Short.MAX_VALUE * normalizedWaveValue);
             encodeSignalForOne[j * 2] = (byte) (waveValue & 0xFF);
             encodeSignalForOne[j * 2 + 1] = (byte) ((waveValue >> 8) & 0xFF);
         }
-        for(int j=0;j<windowWidth;j++){
+        for (int j = 0; j < windowWidth; j++) {
             double normalizedWaveValue = Math.sin(2 * Math.PI * encodeFrequencyForZero * ((double) j / (samplingRate)));
             short waveValue = (short) (Short.MAX_VALUE * normalizedWaveValue);
             encodeSignalForZero[j * 2] = (byte) (waveValue & 0xFF);
@@ -242,7 +242,7 @@ public class MainActivity extends AppCompatActivity {
         for (int i = 0; i < buffer.length; i++) {
             if (flag) {
                 System.out.println(i + String.format(" 0x%2x", buffer[i]));
-                System.out.println(i + String.format(" %8s", Integer.toBinaryString(buffer[i] & 0xFF)).replace(' ', '0'));
+                System.out.println(i + " " + String.format("%8s", Integer.toBinaryString(buffer[i] & 0xFF)).replace(' ', '0'));
             } else {
                 System.out.println(i + String.format(" 0x%2x", buffer[i]));
             }
@@ -296,9 +296,9 @@ public class MainActivity extends AppCompatActivity {
         for (int i = 0; i < dataBits.length; i++) {
             int base = (int) (i * windowWidth) * 2;
             if (dataBits[i] == 1) {
-                System.arraycopy(encodeSignalForOne,0,wave,base,windowWidth*2);
+                System.arraycopy(encodeSignalForOne, 0, wave, base, windowWidth * 2);
             } else {
-                System.arraycopy(encodeSignalForZero,0,wave,base,windowWidth*2);
+                System.arraycopy(encodeSignalForZero, 0, wave, base, windowWidth * 2);
             }
 //            for (int j = 0; j < windowWidth; j++) {
 //                double normalizedWaveValue = Math.sin(2 * Math.PI * frequency * ((double) j / (samplingRate)));
@@ -419,6 +419,7 @@ public class MainActivity extends AppCompatActivity {
                         base = 0;
                     } else {
                         payloadBitsBuffer = new byte[0];
+                        // TODO: fix buffer size bug
                         System.arraycopy(temp, checkIndex, buffer, 0, temp.length - checkIndex);
                         base = temp.length - checkIndex;
                     }
@@ -491,12 +492,12 @@ public class MainActivity extends AppCompatActivity {
             int argMaxIndex = argMax(z, (int) ((double) ThresholdDownFrequency / samplingRate * FFT_LEN), (int) ((double) ThresholdUpFrequency / samplingRate * FFT_LEN));
 //            System.out.println(argMaxIndex);
 
-            if (Math.abs(argMaxIndex - indexForOne) <= 2 && z[argMaxIndex] >= 200) {
+            if (( Math.abs(argMaxIndex - indexForOne) <= 4) && (z[argMaxIndex] >= 100)) {
                 dataBits[i] = 1;
 //                System.out.println(dataBits[i]);
 //                Log.d("FFT", String.valueOf(dataBits[i]));
                 flag = true;
-            } else if (Math.abs(argMaxIndex - indexForZero) <= 2 && z[argMaxIndex] >= 200) {
+            } else if ((Math.abs(argMaxIndex - indexForZero) <= 4) && (z[argMaxIndex] >= 100)) {
                 dataBits[i] = 0;
 //                System.out.println(dataBits[i]);
 //                Log.d("FFT", String.valueOf(dataBits[i]));
@@ -552,9 +553,9 @@ public class MainActivity extends AppCompatActivity {
         byte[] dataBytes = bits2Byte(dataBits);
 
         if (payloadBase == -1) {
-            payloadLength = (int)dataBytes[0]  & 0xff;
+            payloadLength = (int) dataBytes[0] & 0xff;
             System.out.println("PayloadLength: " + payloadLength);
-            if (payloadLength < 0) {
+            if (payloadLength <= 0) {
                 isPreamble = false;
                 return 0;
             }
@@ -630,7 +631,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             } else {
                 currentPreambleBitsIndex = 0;
-                if(dataBits[i]==PREAMBLE_BITS[0]){
+                if (dataBits[i] == PREAMBLE_BITS[0]) {
                     currentPreambleBitsIndex++;
                 }
             }
