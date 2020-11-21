@@ -699,9 +699,9 @@ public class MainActivity extends AppCompatActivity {
 //                System.out.println(dataBits[i]);
 //            }
 
-            if (Math.abs(argMaxIndex - indexForOne) <= 1 ) {
+            if (Math.abs(argMaxIndex - indexForOne) <= 4 && z[argMaxIndex] >= 200) {
                 dataBits[i] = 1;
-            } else if (Math.abs(argMaxIndex - indexForZero) <= 1) {
+            } else if (Math.abs(argMaxIndex - indexForZero) <= 4 && z[argMaxIndex] >= 200) {
                 dataBits[i] = 0;
             } else {
                 if (isPreamble) {
@@ -715,23 +715,6 @@ public class MainActivity extends AppCompatActivity {
                     dataBits[i] = (byte) 0xff;
                 }
             }
-
-//            if (Math.abs(argMaxIndex - indexForOne) <= 1 && z[argMaxIndex] >= 200) {
-//                dataBits[i] = 1;
-//            } else if (Math.abs(argMaxIndex - indexForZero) <= 1 && z[argMaxIndex] >= 200) {
-//                dataBits[i] = 0;
-//            } else {
-//                if (isPreamble) {
-//                    if (z[indexForOne] > z[indexForZero]) {
-//                        dataBits[i] = 1;
-//                    } else {
-//                        dataBits[i] = 0;
-//                    }
-//                    System.out.println("Attention " + i + " " + dataBits[i]);
-//                } else {
-//                    dataBits[i] = (byte) 0xff;
-//                }
-//            }
         }
 
         return dataBits;
