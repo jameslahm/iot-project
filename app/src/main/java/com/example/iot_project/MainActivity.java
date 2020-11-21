@@ -186,7 +186,7 @@ public class MainActivity extends AppCompatActivity {
         recvTextInput = (EditText) findViewById(R.id.recv_text);
 
         startLocateButton = (Button) findViewById(R.id.start_locate);
-        startRecvButton = (Button) findViewById(R.id.start_recv_locate);
+        startRecvLocateButton = (Button) findViewById(R.id.start_recv_locate);
 
         startLocateButton.setOnClickListener(new View.OnClickListener() {
             @RequiresApi(api = Build.VERSION_CODES.KITKAT)
