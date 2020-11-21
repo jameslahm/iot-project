@@ -36,6 +36,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.SyncFailedException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
 import java.net.HttpURLConnection;
@@ -67,11 +68,11 @@ public class MainActivity extends AppCompatActivity {
 
     // send text using samplingRate and frequency
     int samplingRate = 44100;
-    int encodeFrequencyForZero = 15000;
+    int encodeFrequencyForZero = 20000;
     int encodeFrequencyForOne = 10000;
 
     int ThresholdDownFrequency = 9000;
-    int ThresholdUpFrequency = 16000;
+    int ThresholdUpFrequency = 21000;
 
     int OneThresholdDownFrequency = 8000;
     int OneThresholdUpFrequency = 12000;
@@ -130,6 +131,8 @@ public class MainActivity extends AppCompatActivity {
 
     EditText accuracyTextInput;
 
+    Button generateTextButton;
+
 
     // get permission
     private void GetPermission() {
@@ -177,11 +180,13 @@ public class MainActivity extends AppCompatActivity {
         // init FSK
         initFSK();
 
-        FFT_LEN = getMin2Pow((int) (1.0/2 * windowTime * samplingRate));
+//        FFT_LEN = getMin2Pow((int) (1.0/2 * windowTime * samplingRate));
+        FFT_LEN = getMin2Pow((int) (windowTime * samplingRate));
         fft = new FFT(FFT_LEN);
 
         // init button and input
         accuracyTextInput = (EditText) findViewById(R.id.show_accuracy);
+        generateTextButton = (Button) findViewById(R.id.generate_text);
 
         startRecvButton = (Button) findViewById(R.id.start_recv_button);
         stopRecvButton = (Button) findViewById(R.id.stop_recv_button);
@@ -192,6 +197,14 @@ public class MainActivity extends AppCompatActivity {
 
         startLocateButton = (Button) findViewById(R.id.start_locate);
         startRecvLocateButton = (Button) findViewById(R.id.start_recv_locate);
+
+        generateTextButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String text="askcbhdahckvdsajkcvdakbcyhdskbckadcb kacdhbahk dcbakcbsd kcahdvcbk玩法买了房卡的进来拿手机哪里都是比较卡上不上课那";
+                sendTextInput.setText(text);
+            }
+        });
 
         startLocateButton.setOnClickListener(new View.OnClickListener() {
             @RequiresApi(api = Build.VERSION_CODES.KITKAT)
@@ -385,10 +398,10 @@ public class MainActivity extends AppCompatActivity {
     // save bits to wav file
     public void generateWav(byte[] dataBits) {
         // FSK
-        int totalLength = (int) (dataBits.length * windowTime * samplingRate);
+        int totalLength = (int) (dataBits.length * windowWidth);
         byte[] wave = new byte[totalLength * 2];
         for (int i = 0; i < dataBits.length; i++) {
-            int base = (int) (i * windowWidth) * 2;
+            int base = (i * windowWidth) * 2;
             if (dataBits[i] == 1) {
                 System.arraycopy(encodeSignalForOne, 0, wave, base, windowWidth * 2);
             } else {
@@ -507,6 +520,7 @@ public class MainActivity extends AppCompatActivity {
 
                     if (isPreamble) {
                         payloadBitsBuffer = new byte[temp.length - checkIndex];
+//                        System.out.println("CheckIndex: "+(double)checkIndex / (windowWidth * 8 *2));
                         System.arraycopy(temp, checkIndex, payloadBitsBuffer, 0, temp.length - checkIndex);
 
                         base = 0;
@@ -625,12 +639,20 @@ public class MainActivity extends AppCompatActivity {
             double[] x = new double[FFT_LEN];
             int start = (int)((i+1.0/4)*windowWidth);
             int end = (int)((i+3.0/4)*windowWidth);
-            System.arraycopy(signalData, start, x, 0, end-start);
+            System.arraycopy(signalData, start, x, (int)((1.0/4) * windowWidth), end-start);
 
-            // Only process 50% middle
-            for (int j = (end-start); j < FFT_LEN; j++) {
+//          Only process 50% middle
+            for(int j=0;j<(int)((1.0/4) * windowWidth);j++){
+                x[j]=0;
+            }
+//            System.out.println(x[0]);
+            for (int j = (end-start) + (int)((1.0/4) * windowWidth); j < FFT_LEN; j++) {
                 x[j] = 0;
             }
+//            System.arraycopy(signalData,i * windowWidth,x,0,windowWidth);
+//            for(int j=windowWidth;j<FFT_LEN;j++){
+//                x[j]=0;
+//            }
             double[] y = new double[FFT_LEN];
             for (int j = 0; j < FFT_LEN; j++) {
                 y[j] = 0;
@@ -677,10 +699,9 @@ public class MainActivity extends AppCompatActivity {
 //                System.out.println(dataBits[i]);
 //            }
 
-
-            if (Math.abs(argMaxIndex - indexForOne) <= 4 && z[argMaxIndex] >= 200) {
+            if (Math.abs(argMaxIndex - indexForOne) <= 1 ) {
                 dataBits[i] = 1;
-            } else if (Math.abs(argMaxIndex - indexForZero) <= 4 && z[argMaxIndex] >= 200) {
+            } else if (Math.abs(argMaxIndex - indexForZero) <= 1) {
                 dataBits[i] = 0;
             } else {
                 if (isPreamble) {
@@ -694,6 +715,23 @@ public class MainActivity extends AppCompatActivity {
                     dataBits[i] = (byte) 0xff;
                 }
             }
+
+//            if (Math.abs(argMaxIndex - indexForOne) <= 1 && z[argMaxIndex] >= 200) {
+//                dataBits[i] = 1;
+//            } else if (Math.abs(argMaxIndex - indexForZero) <= 1 && z[argMaxIndex] >= 200) {
+//                dataBits[i] = 0;
+//            } else {
+//                if (isPreamble) {
+//                    if (z[indexForOne] > z[indexForZero]) {
+//                        dataBits[i] = 1;
+//                    } else {
+//                        dataBits[i] = 0;
+//                    }
+//                    System.out.println("Attention " + i + " " + dataBits[i]);
+//                } else {
+//                    dataBits[i] = (byte) 0xff;
+//                }
+//            }
         }
 
         return dataBits;
@@ -721,7 +759,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         byte[] dataBits = signal2DataBits(buffer);
-        int bitsLength = dataBits.length;
+//        int bitsLength = dataBits.length;
 
         // init payloadLength and payloadBase
         byte[] dataBytes = bits2Byte(dataBits);
@@ -776,11 +814,7 @@ public class MainActivity extends AppCompatActivity {
                 recvTextInput.setText(text);
 
                 byte[] recvBits = new byte[0];
-                try {
-                    recvBits = byte2bits(text.getBytes("UTF8"));
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                }
+                recvBits = byte2bits(payload);
 
                 // show accuracy
                 text = sendTextInput.getText().toString();
@@ -800,6 +834,8 @@ public class MainActivity extends AppCompatActivity {
                         accuracyBitsNum++;
                     }
                 }
+
+                System.out.println(accuracyBitsNum);
 
                 double accuracy = (double)accuracyBitsNum / textBits.length;
 
@@ -858,7 +894,7 @@ public class MainActivity extends AppCompatActivity {
             if (res >= 0.5 && res < 0.85) {
                 debugBits(preambleBits);
             }
-            if (res >= 0.7) {
+            if (res >= 0.8) {
                 debugBits(preambleBits);
                 isPreamble = true;
                 return (i + 1) * windowWidth * 2;

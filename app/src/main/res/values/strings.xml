@@ -21,4 +21,5 @@
     <string name="start_locate">START LOCATE</string>
     <string name="recv_locate">RECV LOCATE</string>
     <string name="accuracy">Accuracy</string>
+    <string name="generate_text">GENERATE TEXT</string>
 </resources>
