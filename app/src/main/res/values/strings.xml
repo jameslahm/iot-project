@@ -20,4 +20,5 @@
     <string name="stop_recv_button">Stop Recv</string>
     <string name="start_locate">START LOCATE</string>
     <string name="recv_locate">RECV LOCATE</string>
+    <string name="accuracy">Accuracy</string>
 </resources>

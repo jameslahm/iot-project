@@ -20,5 +20,6 @@ if __name__ == "__main__":
     plt.title('STFT Magnitude')
     plt.ylabel('Frequency [Hz]')
     plt.xlabel('Time [sec]')
-    plt.ylim((9000,11000))
+    # plt.ylim((9000,11000))
+    plt.xlim((0,0.025))
     plt.savefig('{}_res.png'.format(filename))

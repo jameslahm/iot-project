@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
@@ -66,11 +67,11 @@ public class MainActivity extends AppCompatActivity {
 
     // send text using samplingRate and frequency
     int samplingRate = 44100;
-    int encodeFrequencyForZero = 20000;
+    int encodeFrequencyForZero = 15000;
     int encodeFrequencyForOne = 10000;
 
     int ThresholdDownFrequency = 9000;
-    int ThresholdUpFrequency = 21000;
+    int ThresholdUpFrequency = 16000;
 
     int OneThresholdDownFrequency = 8000;
     int OneThresholdUpFrequency = 12000;
@@ -127,6 +128,8 @@ public class MainActivity extends AppCompatActivity {
 
     boolean isLocateSender = true;
 
+    EditText accuracyTextInput;
+
 
     // get permission
     private void GetPermission() {
@@ -174,10 +177,12 @@ public class MainActivity extends AppCompatActivity {
         // init FSK
         initFSK();
 
-        FFT_LEN = getMin2Pow((int) (windowTime * samplingRate));
+        FFT_LEN = getMin2Pow((int) (1.0/2 * windowTime * samplingRate));
         fft = new FFT(FFT_LEN);
 
         // init button and input
+        accuracyTextInput = (EditText) findViewById(R.id.show_accuracy);
+
         startRecvButton = (Button) findViewById(R.id.start_recv_button);
         stopRecvButton = (Button) findViewById(R.id.stop_recv_button);
 
@@ -355,6 +360,17 @@ public class MainActivity extends AppCompatActivity {
         debugBytes(dataBytes);
 
         // construct bit data
+        byte[] dataBits = byte2bits(dataBytes);
+
+        // save bits to wav file
+        generateWav(dataBits);
+
+        // start play (send data)
+        mediaPlayer.start();
+        sendTextButton.setEnabled(false);
+    }
+
+    public byte[] byte2bits(byte[] dataBytes){
         byte[] dataBits = new byte[dataBytes.length * 8];
         for (int i = 0; i < dataBytes.length * 8; i++) {
             if ((dataBytes[i / 8] & (1 << (7 - (i % 8)))) > 0) {
@@ -363,12 +379,7 @@ public class MainActivity extends AppCompatActivity {
                 dataBits[i] = 0;
             }
         }
-        // save bits to wav file
-        generateWav(dataBits);
-
-        // start play (send data)
-        mediaPlayer.start();
-        sendTextButton.setEnabled(false);
+        return dataBits;
     }
 
     // save bits to wav file
@@ -610,12 +621,14 @@ public class MainActivity extends AppCompatActivity {
         int bitsLength = signalData.length / windowWidth;
         byte[] dataBits = new byte[bitsLength];
 
-        boolean flag = false;
         for (int i = 0; i < bitsLength; i++) {
             double[] x = new double[FFT_LEN];
-            System.arraycopy(signalData, i * windowWidth, x, 0, windowWidth);
+            int start = (int)((i+1.0/4)*windowWidth);
+            int end = (int)((i+3.0/4)*windowWidth);
+            System.arraycopy(signalData, start, x, 0, end-start);
 
-            for (int j = windowWidth; j < FFT_LEN; j++) {
+            // Only process 50% middle
+            for (int j = (end-start); j < FFT_LEN; j++) {
                 x[j] = 0;
             }
             double[] y = new double[FFT_LEN];
@@ -731,6 +744,7 @@ public class MainActivity extends AppCompatActivity {
                 System.arraycopy(dataBytes, 1, payload, payloadBase, payloadLength);
                 payloadBase = -1;
                 isPreamble = false;
+                preambleBits = new byte[]{-1, -1, -1, -1, -1, -1, -1, -1};
                 showRecvText();
                 return (payloadLength + 1) * 8 * windowWidth * 2;
             }
@@ -760,6 +774,41 @@ public class MainActivity extends AppCompatActivity {
                 String text = new String(payload, StandardCharsets.UTF_8);
                 System.out.println(text);
                 recvTextInput.setText(text);
+
+                byte[] recvBits = new byte[0];
+                try {
+                    recvBits = byte2bits(text.getBytes("UTF8"));
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
+
+                // show accuracy
+                text = sendTextInput.getText().toString();
+                // first get utf-8 bytes
+                byte[] textBytes = new byte[0];
+                try {
+                    textBytes = text.getBytes("UTF8");
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
+
+                byte[] textBits = byte2bits(textBytes);
+
+                int accuracyBitsNum=0;
+                for(int i=0;i<textBits.length && i<recvBits.length;i++){
+                    if(recvBits[i]==textBits[i]){
+                        accuracyBitsNum++;
+                    }
+                }
+
+                double accuracy = (double)accuracyBitsNum / textBits.length;
+
+                @SuppressLint("DefaultLocale") String result = String.format("%.2f",accuracy * 100);
+
+                result += "%";
+
+                accuracyTextInput.setText(result);
+
             }
         });
     }
@@ -809,7 +858,7 @@ public class MainActivity extends AppCompatActivity {
             if (res >= 0.5 && res < 0.85) {
                 debugBits(preambleBits);
             }
-            if (res >= 0.85) {
+            if (res >= 0.7) {
                 debugBits(preambleBits);
                 isPreamble = true;
                 return (i + 1) * windowWidth * 2;
