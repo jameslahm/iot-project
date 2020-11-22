@@ -79,7 +79,7 @@ public class MainActivity extends AppCompatActivity {
     int ZeroThresholdUpFrequency = 22000;
     int ZeroThresholdDownFrequency = 18000;
 
-    double windowTime = 0.010;
+    double windowTime = 0.020;
     int windowWidth = (int) (windowTime * samplingRate);
 
     // single channel
@@ -637,22 +637,22 @@ public class MainActivity extends AppCompatActivity {
 
         for (int i = 0; i < bitsLength; i++) {
             double[] x = new double[FFT_LEN];
-            int start = (int)((i+1.0/4)*windowWidth);
-            int end = (int)((i+3.0/4)*windowWidth);
-            System.arraycopy(signalData, start, x, (int)((1.0/4) * windowWidth), end-start);
-
-//          Only process 50% middle
-            for(int j=0;j<(int)((1.0/4) * windowWidth);j++){
-                x[j]=0;
-            }
-//            System.out.println(x[0]);
-            for (int j = (end-start) + (int)((1.0/4) * windowWidth); j < FFT_LEN; j++) {
-                x[j] = 0;
-            }
-//            System.arraycopy(signalData,i * windowWidth,x,0,windowWidth);
-//            for(int j=windowWidth;j<FFT_LEN;j++){
+//            int start = (int)((i+1.0/4)*windowWidth);
+//            int end = (int)((i+3.0/4)*windowWidth);
+//            System.arraycopy(signalData, start, x, (int)((1.0/4) * windowWidth), end-start);
+//
+////          Only process 50% middle
+//            for(int j=0;j<(int)((1.0/4) * windowWidth);j++){
 //                x[j]=0;
 //            }
+////            System.out.println(x[0]);
+//            for (int j = (end-start) + (int)((1.0/4) * windowWidth); j < FFT_LEN; j++) {
+//                x[j] = 0;
+//            }
+            System.arraycopy(signalData,i * windowWidth,x,0,windowWidth);
+            for(int j=windowWidth;j<FFT_LEN;j++){
+                x[j]=0;
+            }
             double[] y = new double[FFT_LEN];
             for (int j = 0; j < FFT_LEN; j++) {
                 y[j] = 0;
@@ -874,7 +874,7 @@ public class MainActivity extends AppCompatActivity {
             }
             preambleBits[preambleBits.length - 1] = dataBits[i];
             double res = corr(preambleBits, PREAMBLE_BITS);
-            if (res >= 0.5 && res < 0.85) {
+            if (res >= 0.2 && res < 0.85) {
                 debugBits(preambleBits);
             }
             if (res >= 0.8) {
