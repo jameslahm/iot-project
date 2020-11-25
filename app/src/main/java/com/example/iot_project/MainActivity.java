@@ -68,18 +68,18 @@ public class MainActivity extends AppCompatActivity {
 
     // send text using samplingRate and frequency
     int samplingRate = 44100;
-    int encodeFrequencyForZero = 20000;
-    int encodeFrequencyForOne = 10000;
+    int encodeFrequencyForZero = 6000;
+    int encodeFrequencyForOne = 9000;
 
-    int ThresholdDownFrequency = 9000;
-    int ThresholdUpFrequency = 21000;
+    int ThresholdDownFrequency = 5000;
+    int ThresholdUpFrequency = 10000;
 
     int OneThresholdDownFrequency = 8000;
     int OneThresholdUpFrequency = 12000;
     int ZeroThresholdUpFrequency = 22000;
     int ZeroThresholdDownFrequency = 18000;
 
-    double windowTime = 0.020;
+    double windowTime = 0.010;
     int windowWidth = (int) (windowTime * samplingRate);
 
     // single channel
@@ -877,7 +877,7 @@ public class MainActivity extends AppCompatActivity {
             if (res >= 0.2 && res < 0.85) {
                 debugBits(preambleBits);
             }
-            if (res >= 0.8) {
+            if (res >= 0.9) {
                 debugBits(preambleBits);
                 isPreamble = true;
                 return (i + 1) * windowWidth * 2;
