@@ -115,6 +115,8 @@ public class MainActivity extends AppCompatActivity {
     int payloadBase = -1;
     byte[] payloadBitsBuffer = new byte[0];
 
+    byte[] totalPayload = new byte[0];
+
     // FSK
     byte[] encodeSignalForOne;
     byte[] encodeSignalForZero;
@@ -141,6 +143,11 @@ public class MainActivity extends AppCompatActivity {
     boolean isCheckAlign = true;
 
     int currentPreamBitsNum = 0;
+
+    int FRAME_ID_LENGTH = 1;
+    int FRAME_MAX_LENGTH = 10;
+
+    int leftFrames = 0;
 
 
     // get permission
@@ -210,7 +217,7 @@ public class MainActivity extends AppCompatActivity {
         generateTextButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String text="askcbhdahckvdsajkcvdakbcyhdskbckadcb kacdhbahk dcbakcbsd kcahdvcbk玩法买了房卡的进来拿手机哪里都是比较卡上不上课那";
+                String text="askcbhdahckvdsajkcvdakbcyhdskbckadcb kacdhbahk dcbakcbsd kcahdvcbk12213132432asascdscd31432432asdsa";
                 sendTextInput.setText(text);
             }
         });
@@ -363,33 +370,41 @@ public class MainActivity extends AppCompatActivity {
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     public void sendText(String text) throws UnsupportedEncodingException {
         // first get utf-8 bytes
-        byte[] textBytes = text.getBytes("UTF8");
+        byte[] totalTextBytes = text.getBytes("UTF8");
 
-        // add preamble and payload length
-        byte[] dataBytes = new byte[textBytes.length + PREAMBLE_BYTE_LENGTH + HEADER_BYTE_LENGTH];
+        int totalFrames = (int) Math.ceil((double) totalTextBytes.length / FRAME_MAX_LENGTH);
+        for(int i=0;i< totalFrames;i++) {
+            // add preamble and payload length
+            byte[] textBytes = Arrays.copyOfRange(totalTextBytes,i*FRAME_MAX_LENGTH,Math.min((i+1)*FRAME_MAX_LENGTH,totalTextBytes.length));
 
-        // copy payload to dataBytes
-        System.arraycopy(textBytes, 0, dataBytes, PREAMBLE_BYTE_LENGTH + HEADER_BYTE_LENGTH, textBytes.length);
-        // add preamble
-        for (int i = 0; i < PREAMBLE_BYTE_LENGTH; i++) {
-            dataBytes[i] = PREAMBLE_BYTES[i];
+            byte[] dataBytes = new byte[textBytes.length + PREAMBLE_BYTE_LENGTH + HEADER_BYTE_LENGTH];
+
+            // copy payload to dataBytes
+            System.arraycopy(textBytes, 0, dataBytes, PREAMBLE_BYTE_LENGTH + HEADER_BYTE_LENGTH, textBytes.length);
+            // add preamble
+            for (int j = 0; j < PREAMBLE_BYTE_LENGTH; j++) {
+                dataBytes[j] = PREAMBLE_BYTES[j];
+            }
+            // add header
+            for (int j = PREAMBLE_BYTE_LENGTH; j < HEADER_BYTE_LENGTH + PREAMBLE_BYTE_LENGTH; j++) {
+                dataBytes[j] = (byte) textBytes.length;
+            }
+            for(int j= PREAMBLE_BYTE_LENGTH + HEADER_BYTE_LENGTH;j<PREAMBLE_BYTE_LENGTH + HEADER_BYTE_LENGTH + FRAME_ID_LENGTH;j++){
+                dataBytes[j]=(byte) totalFrames;
+            }
+
+            debugBytes(dataBytes);
+
+            // construct bit data
+            byte[] dataBits = byte2bits(dataBytes);
+
+            // save bits to wav file
+            generateWav(dataBits);
+
+            // start play (send data)
+            mediaPlayer.start();
+            sendTextButton.setEnabled(false);
         }
-        // add header
-        for (int i = PREAMBLE_BYTE_LENGTH; i < HEADER_BYTE_LENGTH + PREAMBLE_BYTE_LENGTH; i++) {
-            dataBytes[i] = (byte) textBytes.length;
-        }
-
-        debugBytes(dataBytes);
-
-        // construct bit data
-        byte[] dataBits = byte2bits(dataBytes);
-
-        // save bits to wav file
-        generateWav(dataBits);
-
-        // start play (send data)
-        mediaPlayer.start();
-        sendTextButton.setEnabled(false);
     }
 
     public byte[] byte2bits(byte[] dataBytes){
@@ -764,6 +779,13 @@ public class MainActivity extends AppCompatActivity {
                     dataBits[i] = (byte) 0xff;
                 }
             }
+
+
+//            if(isPreamble){
+//                if(i % 8 ==0){
+//                    dataBits[i] = 0;
+//                }
+//            }
         }
 
         return dataBits;
@@ -786,7 +808,7 @@ public class MainActivity extends AppCompatActivity {
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     int processSignal(byte[] buffer) {
-        if (!(buffer.length / (windowWidth * 2) >= 8)) {
+        if (!(buffer.length / (windowWidth * 2) >= 16)) {
             return 0;
         }
 
@@ -804,8 +826,13 @@ public class MainActivity extends AppCompatActivity {
                 isPreamble = false;
                 return 8 * windowWidth * 2;
             }
-            payload = new byte[payloadLength];
-            payloadBase = 0;
+
+            if(leftFrames ==0){
+                int totalFrames = (int) dataBytes[1] & 0xff;
+                leftFrames = totalFrames;
+            }
+            leftFrames--;
+
             if (dataBytes.length - 1 < payloadLength) {
                 System.arraycopy(dataBytes, 1, payload, payloadBase, dataBytes.length - 1);
                 payloadBase += dataBytes.length - 1;
@@ -816,8 +843,18 @@ public class MainActivity extends AppCompatActivity {
                 isPreamble = false;
                 isCheckAlign = true;
                 preambleBits = new byte[]{-1, -1, -1, -1, -1, -1, -1, -1};
-                showRecvText();
+
                 currentPreamBitsNum = 0;
+
+                byte[] temp = new byte[totalPayload.length + payload.length];
+                System.arraycopy(totalPayload,0,temp,0,totalPayload.length);
+                System.arraycopy(payload,0,temp,0,payload.length);
+                totalPayload = temp;
+
+                if(leftFrames==0){
+                    showRecvText();
+                }
+
                 return (payloadLength + 1) * 8 * windowWidth * 2;
             }
         } else {
@@ -834,6 +871,15 @@ public class MainActivity extends AppCompatActivity {
                 currentPreamBitsNum = 0;
                 preambleBits = new byte[]{-1, -1, -1, -1, -1, -1, -1, -1};
                 showRecvText();
+                byte[] temp = new byte[totalPayload.length + payload.length];
+                System.arraycopy(totalPayload,0,temp,0,totalPayload.length);
+                System.arraycopy(payload,0,temp,0,payload.length);
+                totalPayload = temp;
+
+                if(leftFrames==0){
+                    showRecvText();
+                }
+
                 return res;
             }
         }
