@@ -869,6 +869,9 @@ public class MainActivity extends AppCompatActivity {
                     if(recvBits[i]==textBits[i]){
                         accuracyBitsNum++;
                     }
+                    else{
+                        System.out.println("ERROR "+i);
+                    }
                 }
 
                 System.out.println(accuracyBitsNum);
