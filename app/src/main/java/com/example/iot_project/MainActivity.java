@@ -69,10 +69,10 @@ public class MainActivity extends AppCompatActivity {
     // send text using samplingRate and frequency
     int samplingRate = 44100;
     int encodeFrequencyForZero = 6000;
-    int encodeFrequencyForOne = 9000;
+    int encodeFrequencyForOne = 10000;
 
     int ThresholdDownFrequency = 5000;
-    int ThresholdUpFrequency = 10000;
+    int ThresholdUpFrequency = 11000;
 
     int OneThresholdDownFrequency = 8000;
     int OneThresholdUpFrequency = 12000;
