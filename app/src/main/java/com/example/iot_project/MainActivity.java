@@ -111,7 +111,7 @@ public class MainActivity extends AppCompatActivity {
     // status
     boolean isPreamble = false;
     int payloadLength = -1;
-    byte[] payload;
+    byte[] payload = new byte[0];
     int payloadBase = -1;
     byte[] payloadBitsBuffer = new byte[0];
 
@@ -148,6 +148,9 @@ public class MainActivity extends AppCompatActivity {
     int FRAME_MAX_LENGTH = 10;
 
     int leftFrames = 0;
+
+    byte[] currentTextBytes;
+    int currentFrameId;
 
 
     // get permission
@@ -291,6 +294,9 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 // stop record
                 isRecving = false;
+                payloadBase = -1;
+                leftFrames = 0;
+                totalPayload = new byte[0];
                 // enable start record
                 stopRecvButton.setEnabled(false);
                 startRecvButton.setEnabled(true);
@@ -371,40 +377,44 @@ public class MainActivity extends AppCompatActivity {
     public void sendText(String text) throws UnsupportedEncodingException {
         // first get utf-8 bytes
         byte[] totalTextBytes = text.getBytes("UTF8");
+        currentTextBytes = totalTextBytes;
+        currentFrameId = 0;
+        sendCurrentFrame();
+    }
 
-        int totalFrames = (int) Math.ceil((double) totalTextBytes.length / FRAME_MAX_LENGTH);
-        for(int i=0;i< totalFrames;i++) {
-            // add preamble and payload length
-            byte[] textBytes = Arrays.copyOfRange(totalTextBytes,i*FRAME_MAX_LENGTH,Math.min((i+1)*FRAME_MAX_LENGTH,totalTextBytes.length));
+    public  void sendCurrentFrame(){
+        // save bits to wav file
+        int totalFrames = (int) Math.ceil((double) currentTextBytes.length / FRAME_MAX_LENGTH);
+        // add preamble and payload length
+        byte[] textBytes = Arrays.copyOfRange(currentTextBytes,currentFrameId*FRAME_MAX_LENGTH,Math.min((currentFrameId+1)*FRAME_MAX_LENGTH,currentTextBytes.length));
 
-            byte[] dataBytes = new byte[textBytes.length + PREAMBLE_BYTE_LENGTH + HEADER_BYTE_LENGTH];
+        byte[] dataBytes = new byte[textBytes.length + PREAMBLE_BYTE_LENGTH + HEADER_BYTE_LENGTH + FRAME_ID_LENGTH];
 
-            // copy payload to dataBytes
-            System.arraycopy(textBytes, 0, dataBytes, PREAMBLE_BYTE_LENGTH + HEADER_BYTE_LENGTH, textBytes.length);
-            // add preamble
-            for (int j = 0; j < PREAMBLE_BYTE_LENGTH; j++) {
-                dataBytes[j] = PREAMBLE_BYTES[j];
-            }
-            // add header
-            for (int j = PREAMBLE_BYTE_LENGTH; j < HEADER_BYTE_LENGTH + PREAMBLE_BYTE_LENGTH; j++) {
-                dataBytes[j] = (byte) textBytes.length;
-            }
-            for(int j= PREAMBLE_BYTE_LENGTH + HEADER_BYTE_LENGTH;j<PREAMBLE_BYTE_LENGTH + HEADER_BYTE_LENGTH + FRAME_ID_LENGTH;j++){
-                dataBytes[j]=(byte) totalFrames;
-            }
-
-            debugBytes(dataBytes);
-
-            // construct bit data
-            byte[] dataBits = byte2bits(dataBytes);
-
-            // save bits to wav file
-            generateWav(dataBits);
-
-            // start play (send data)
-            mediaPlayer.start();
-            sendTextButton.setEnabled(false);
+        // copy payload to dataBytes
+        System.arraycopy(textBytes, 0, dataBytes, PREAMBLE_BYTE_LENGTH + HEADER_BYTE_LENGTH +FRAME_ID_LENGTH, textBytes.length);
+        // add preamble
+        for (int j = 0; j < PREAMBLE_BYTE_LENGTH; j++) {
+            dataBytes[j] = PREAMBLE_BYTES[j];
         }
+        // add header
+        for (int j = PREAMBLE_BYTE_LENGTH; j < HEADER_BYTE_LENGTH + PREAMBLE_BYTE_LENGTH; j++) {
+            dataBytes[j] = (byte) textBytes.length;
+        }
+        for(int j= PREAMBLE_BYTE_LENGTH + HEADER_BYTE_LENGTH;j<PREAMBLE_BYTE_LENGTH + HEADER_BYTE_LENGTH + FRAME_ID_LENGTH;j++){
+            dataBytes[j]=(byte) totalFrames;
+        }
+
+        debugBytes(dataBytes);
+
+        // construct bit data
+        byte[] dataBits = byte2bits(dataBytes);
+        generateWav(dataBits);
+
+        // start play (send data)
+        mediaPlayer.start();
+        System.out.println("The Frame "+currentFrameId);
+        currentFrameId ++;
+        sendTextButton.setEnabled(false);
     }
 
     public byte[] byte2bits(byte[] dataBytes){
@@ -473,9 +483,12 @@ public class MainActivity extends AppCompatActivity {
         mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
             @Override
             public void onCompletion(MediaPlayer mp) {
+                int totalFrames = (int) Math.ceil((double) currentTextBytes.length / FRAME_MAX_LENGTH);
+                if(currentFrameId < totalFrames){
+                    sendCurrentFrame();
+                }
                 sendTextButton.setEnabled(true);
             }
-
         });
         try {
             File file = new File(filepath);
@@ -521,7 +534,7 @@ public class MainActivity extends AppCompatActivity {
 
             // continue reading data
             while (isRecving) {
-                int bufferReadResult = audioRecord.read(buffer, base, bufferSize - base);
+                int bufferReadResult = audioRecord.read(buffer, base, Math.max(bufferSize - base,0));
                 for (int i = base; i < base + bufferReadResult; i++) {
                     dos.write(buffer[i]);
                     totalRecv++;
@@ -551,7 +564,9 @@ public class MainActivity extends AppCompatActivity {
                     } else {
                         payloadBitsBuffer = new byte[0];
                         // TODO: fix buffer size bug
-                        System.arraycopy(temp, checkIndex, buffer, 0, temp.length - checkIndex);
+                        byte[] bufferTemp = new byte[Math.max(temp.length - checkIndex,bufferSize)];
+                        System.arraycopy(temp, checkIndex, bufferTemp, 0, temp.length - checkIndex);
+                        buffer = bufferTemp;
                         base = temp.length - checkIndex;
                     }
                     continue;
@@ -821,24 +836,41 @@ public class MainActivity extends AppCompatActivity {
 
         if (payloadBase == -1) {
             payloadLength = (int) dataBytes[0] & 0xff;
-            System.out.println("PayloadLength: " + payloadLength);
+            payloadLength = payloadLength & 0x000f;
+            payloadBase = 0;
+
             if (payloadLength == 0) {
                 isPreamble = false;
-                return 8 * windowWidth * 2;
+                return 2*8 * windowWidth * 2;
             }
 
             if(leftFrames ==0){
                 int totalFrames = (int) dataBytes[1] & 0xff;
                 leftFrames = totalFrames;
+                System.out.println("FrameLength: " + leftFrames);
             }
             leftFrames--;
+            if(leftFrames!=0){
+                payloadLength = 10;
+            }
+            System.out.println("PayloadLength: " + payloadLength);
 
-            if (dataBytes.length - 1 < payloadLength) {
-                System.arraycopy(dataBytes, 1, payload, payloadBase, dataBytes.length - 1);
-                payloadBase += dataBytes.length - 1;
+            if(leftFrames < 0 ){
+                isPreamble = false;
+                leftFrames = 0;
+                return 2*8 * windowWidth * 2;
+            }
+
+            System.out.println("Left Frames: " + leftFrames);
+
+            payload = new byte[payloadLength];
+
+            if (dataBytes.length - 2 < payloadLength) {
+                System.arraycopy(dataBytes, 1, payload, payloadBase, dataBytes.length - 2);
+                payloadBase += dataBytes.length - 2;
                 return dataBytes.length * 8 * windowWidth * 2;
             } else {
-                System.arraycopy(dataBytes, 1, payload, payloadBase, payloadLength);
+                System.arraycopy(dataBytes, 2, payload, payloadBase, payloadLength);
                 payloadBase = -1;
                 isPreamble = false;
                 isCheckAlign = true;
@@ -855,7 +887,7 @@ public class MainActivity extends AppCompatActivity {
                     showRecvText();
                 }
 
-                return (payloadLength + 1) * 8 * windowWidth * 2;
+                return (payloadLength + 2) * 8 * windowWidth * 2;
             }
         } else {
             if (dataBytes.length < payloadLength - payloadBase) {
@@ -870,7 +902,6 @@ public class MainActivity extends AppCompatActivity {
                 isCheckAlign = true;
                 currentPreamBitsNum = 0;
                 preambleBits = new byte[]{-1, -1, -1, -1, -1, -1, -1, -1};
-                showRecvText();
                 byte[] temp = new byte[totalPayload.length + payload.length];
                 System.arraycopy(totalPayload,0,temp,0,totalPayload.length);
                 System.arraycopy(payload,0,temp,0,payload.length);
@@ -891,12 +922,12 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 // Stuff that updates the UI
-                String text = new String(payload, StandardCharsets.UTF_8);
+                String text = new String(totalPayload, StandardCharsets.UTF_8);
                 System.out.println(text);
                 recvTextInput.setText(text);
 
                 byte[] recvBits = new byte[0];
-                recvBits = byte2bits(payload);
+                recvBits = byte2bits(totalPayload);
 
                 // show accuracy
                 text = sendTextInput.getText().toString();
@@ -929,7 +960,7 @@ public class MainActivity extends AppCompatActivity {
                 System.out.println("Recv: "+recvBits.length);
                 System.out.println("Send: "+textBits.length);
 
-
+                totalPayload = new byte[0];
             }
         });
     }
@@ -1045,15 +1076,15 @@ public class MainActivity extends AppCompatActivity {
         int bitsLength = dataBits.length;
 //        debugBits(dataBits);
 
-        if(isCheckAlign) {
-            int[] res = checkAlign(buffer);
-            if (res[0] != 0) {
-                isCheckAlign = false;
-                System.out.println("Align: "+res[1]);
-            }
-            return res[1];
-        }
-        debugBits(dataBits);
+//        if(isCheckAlign) {
+//            int[] res = checkAlign(buffer);
+//            if (res[0] != 0) {
+//                isCheckAlign = false;
+//                System.out.println("Align: "+res[1]);
+//            }
+//            return res[1];
+//        }
+//        debugBits(dataBits);
         for (int i = 0; i < bitsLength; i++) {
             for (int j = 0; j < preambleBits.length - 1; j++) {
                 preambleBits[j] = preambleBits[j + 1];
@@ -1061,7 +1092,7 @@ public class MainActivity extends AppCompatActivity {
             currentPreamBitsNum++;
             preambleBits[preambleBits.length - 1] = dataBits[i];
             double corrValue = corr(preambleBits, PREAMBLE_BITS);
-            if(corrValue >= 0.2){
+            if(corrValue >= 0.5){
                 debugBits(preambleBits);
             }
             if (corrValue >= 0.85) {
@@ -1072,10 +1103,10 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        if(currentPreamBitsNum>=8){
-            isCheckAlign = true;
-            currentPreamBitsNum = 0;
-        }
+//        if(currentPreamBitsNum>=8){
+//            isCheckAlign = true;
+//            currentPreamBitsNum = 0;
+//        }
 
         return bitsLength * windowWidth * 2;
 
