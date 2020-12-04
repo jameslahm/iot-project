@@ -3,3 +3,4 @@ venv
 *.wav
 .vscode
 *.class
+out
