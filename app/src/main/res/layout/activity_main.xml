@@ -10,31 +10,42 @@
         android:id="@+id/generate_text"
         android:layout_width="182dp"
         android:layout_height="50dp"
-        android:layout_marginTop="128dp"
+        android:layout_marginTop="88dp"
         android:text="@string/generate_text"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.82"
+        app:layout_constraintHorizontal_bias="0.812"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/send_text_button"
+        android:layout_width="126dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="88dp"
+        android:text="@string/send_text_button"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.108"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <EditText
         android:id="@+id/recv_text"
         android:layout_width="240dp"
-        android:layout_height="107dp"
-        android:layout_marginTop="192dp"
+        android:layout_height="46dp"
+        android:layout_marginTop="152dp"
         android:autofillHints=""
         android:ems="10"
         android:hint="@string/recv_text_input"
         android:inputType="textMultiLine"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.192"
+        app:layout_constraintHorizontal_bias="0.181"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <EditText
         android:id="@+id/send_text_input"
-        android:layout_width="249dp"
-        android:layout_height="99dp"
+        android:layout_width="232dp"
+        android:layout_height="54dp"
         android:layout_marginTop="16dp"
         android:autofillHints=""
         android:ems="10"
@@ -46,13 +57,38 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <Button
+        android:id="@+id/start_recv_button"
+        android:layout_width="129dp"
+        android:layout_height="54dp"
+        android:layout_marginTop="208dp"
+        android:text="@string/start_recv_button"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.109"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <EditText
+        android:id="@+id/show_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="476dp"
+        android:autofillHints=""
+        android:ems="10"
+        android:hint="@string/time"
+        android:inputType="text"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.154"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
         android:id="@+id/stop_recv_button"
         android:layout_width="118dp"
         android:layout_height="52dp"
-        android:layout_marginTop="320dp"
+        android:layout_marginTop="208dp"
         android:text="@string/stop_recv_button"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.709"
+        app:layout_constraintHorizontal_bias="0.713"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -60,10 +96,32 @@
         android:id="@+id/start_locate"
         android:layout_width="158dp"
         android:layout_height="53dp"
-        android:layout_marginTop="452dp"
+        android:layout_marginTop="340dp"
         android:text="@string/start_locate"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.118"
+        app:layout_constraintHorizontal_bias="0.122"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/listen_locate"
+        android:layout_width="158dp"
+        android:layout_height="53dp"
+        android:layout_marginTop="404dp"
+        android:text="@string/listen_locate"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.122"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/stop_locate_button"
+        android:layout_width="160dp"
+        android:layout_height="49dp"
+        android:layout_marginTop="404dp"
+        android:text="@string/stop_locate"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.832"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -71,21 +129,10 @@
         android:id="@+id/start_recv_locate"
         android:layout_width="170dp"
         android:layout_height="51dp"
-        android:layout_marginTop="452dp"
+        android:layout_marginTop="340dp"
         android:text="@string/recv_locate"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.863"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <Button
-        android:id="@+id/start_recv_button"
-        android:layout_width="129dp"
-        android:layout_height="54dp"
-        android:layout_marginTop="320dp"
-        android:text="@string/start_recv_button"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.106"
+        app:layout_constraintHorizontal_bias="0.867"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -93,24 +140,13 @@
         android:id="@+id/show_accuracy"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="392dp"
+        android:layout_marginTop="280dp"
         android:autofillHints=""
         android:ems="10"
         android:hint="@string/accuracy"
         android:inputType="text"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.149"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <Button
-        android:id="@+id/send_text_button"
-        android:layout_width="126dp"
-        android:layout_height="50dp"
-        android:layout_marginTop="128dp"
-        android:text="@string/send_text_button"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.115"
+        app:layout_constraintHorizontal_bias="0.154"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 

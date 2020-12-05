@@ -48,6 +48,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Random;
 
 import biz.source_code.dsp.filter.FilterPassType;
 import biz.source_code.dsp.filter.IirFilter;
@@ -95,7 +96,7 @@ public class MainActivity extends AppCompatActivity {
     // isRecording
     boolean isRecving = false;
     // audio record buffer size
-    int bufferSize = 7056 ;
+    int bufferSize = 7056;
 
     // frame args
     int PREAMBLE_BYTE_LENGTH = 1;
@@ -125,9 +126,11 @@ public class MainActivity extends AppCompatActivity {
     // Locate
     Button startLocateButton;
     Button startRecvLocateButton;
+    Button listenLocateButton;
 
     boolean isLocateRecving = false;
     boolean isLocateSending = false;
+    EditText timeTextInput;
 
     long TB1 = 0;
     long TB3 = 0;
@@ -135,7 +138,7 @@ public class MainActivity extends AppCompatActivity {
     long TA3 = 0;
     long TA1 = 0;
 
-    boolean isLocateSender = true;
+    boolean isLocateSender = false;
 
     EditText accuracyTextInput;
 
@@ -147,13 +150,20 @@ public class MainActivity extends AppCompatActivity {
 
     int leftFlushs = 0;
     int FRAME_ID_LENGTH = 1;
-    int FRAME_MAX_LENGTH = 10;
+    int FRAME_MAX_LENGTH = 255;
 
     int leftFrames = 0;
 
     byte[] currentTextBytes;
     int currentFrameId;
 
+    Button stopLocateButton;
+
+    int TA1Align = -1;
+    int TA3Align = -1;
+
+    int TB1Align = -1;
+    int TB3Align = -1;
 
     // get permission
     private void GetPermission() {
@@ -218,11 +228,22 @@ public class MainActivity extends AppCompatActivity {
 
         startLocateButton = (Button) findViewById(R.id.start_locate);
         startRecvLocateButton = (Button) findViewById(R.id.start_recv_locate);
+        listenLocateButton = (Button) findViewById(R.id.listen_locate);
+        stopLocateButton = (Button) findViewById(R.id.stop_locate_button);
+        timeTextInput = (EditText) findViewById(R.id.show_time);
 
         generateTextButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String text="askcbhdahckvdsajkcvdakbcyhdskbckadcb kacdhbahk dcbakcbsd kcahdvcbk12213132432asascdscd31432432asdsa";
+                String str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+                Random random = new Random(0);
+                StringBuffer stringBuffer = new StringBuffer();
+                for (int i = 0; i < 305; i++) {
+                    int number = random.nextInt(62);
+                    stringBuffer.append(str.charAt(number));
+                }
+                String text = stringBuffer.toString();
+
                 sendTextInput.setText(text);
             }
         });
@@ -233,16 +254,34 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 startLocateButton.setEnabled(false);
                 // send input text
-                try {
-                    sendText("");
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                }
-
                 isLocateSender = true;
                 startRecvButton.setEnabled(false);
-                isLocateRecving = true;
-                startLocate();
+
+//                try {
+//                    sendText("");
+//                } catch (UnsupportedEncodingException e) {
+//                    e.printStackTrace();
+//                }
+                sendPreamble();
+                startLocateButton.setEnabled(true);
+            }
+        });
+
+        stopLocateButton.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                isLocateSending =false;
+                isLocateRecving = false;
+                isLocateSender = false;
+                isRecving = false;
+                TA3Align = -1;
+                TB3Align = -1;
+                preambleBits = new byte[]{-1, -1, -1, -1, -1, -1, -1, -1};
+                isPreamble =false;
+                isCheckAlign = true;
+                currentPreamBitsNum = 0;
+                startRecvButton.setEnabled(true);
+                stopLocateButton.setEnabled(true);
             }
         });
 
@@ -250,6 +289,14 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 startRecvButton.setEnabled(false);
+                isLocateRecving = true;
+                startLocate();
+            }
+        });
+
+        listenLocateButton.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
                 isLocateRecving = true;
                 startLocate();
             }
@@ -375,6 +422,17 @@ public class MainActivity extends AppCompatActivity {
         System.out.println();
     }
 
+    public void sendPreamble() {
+        byte[] dataBytes = new byte[1];
+        dataBytes[0] = PREAMBLE_BYTES[0];
+//        dataBytes[1] = PREAMBLE_BYTES[0];
+        debugBytes(dataBytes);
+        byte[] dataBits = byte2bits(dataBytes);
+        generateWav(dataBits);
+        mediaPlayer.start();
+        System.out.println("Send Preamble");
+    }
+
     // TODO: support text segment
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     public void sendText(String text) throws UnsupportedEncodingException {
@@ -385,16 +443,16 @@ public class MainActivity extends AppCompatActivity {
         sendCurrentFrame();
     }
 
-    public  void sendCurrentFrame(){
+    public void sendCurrentFrame() {
         // save bits to wav file
         int totalFrames = (int) Math.ceil((double) currentTextBytes.length / FRAME_MAX_LENGTH);
         // add preamble and payload length
-        byte[] textBytes = Arrays.copyOfRange(currentTextBytes,currentFrameId*FRAME_MAX_LENGTH,Math.min((currentFrameId+1)*FRAME_MAX_LENGTH,currentTextBytes.length));
+        byte[] textBytes = Arrays.copyOfRange(currentTextBytes, currentFrameId * FRAME_MAX_LENGTH, Math.min((currentFrameId + 1) * FRAME_MAX_LENGTH, currentTextBytes.length));
 
         byte[] dataBytes = new byte[textBytes.length + PREAMBLE_BYTE_LENGTH + HEADER_BYTE_LENGTH + FRAME_ID_LENGTH];
 
         // copy payload to dataBytes
-        System.arraycopy(textBytes, 0, dataBytes, PREAMBLE_BYTE_LENGTH + HEADER_BYTE_LENGTH +FRAME_ID_LENGTH, textBytes.length);
+        System.arraycopy(textBytes, 0, dataBytes, PREAMBLE_BYTE_LENGTH + HEADER_BYTE_LENGTH + FRAME_ID_LENGTH, textBytes.length);
         // add preamble
         for (int j = 0; j < PREAMBLE_BYTE_LENGTH; j++) {
             dataBytes[j] = PREAMBLE_BYTES[j];
@@ -403,8 +461,8 @@ public class MainActivity extends AppCompatActivity {
         for (int j = PREAMBLE_BYTE_LENGTH; j < HEADER_BYTE_LENGTH + PREAMBLE_BYTE_LENGTH; j++) {
             dataBytes[j] = (byte) textBytes.length;
         }
-        for(int j= PREAMBLE_BYTE_LENGTH + HEADER_BYTE_LENGTH;j<PREAMBLE_BYTE_LENGTH + HEADER_BYTE_LENGTH + FRAME_ID_LENGTH;j++){
-            dataBytes[j]=(byte) totalFrames;
+        for (int j = PREAMBLE_BYTE_LENGTH + HEADER_BYTE_LENGTH; j < PREAMBLE_BYTE_LENGTH + HEADER_BYTE_LENGTH + FRAME_ID_LENGTH; j++) {
+            dataBytes[j] = (byte) totalFrames;
         }
 
         debugBytes(dataBytes);
@@ -415,12 +473,12 @@ public class MainActivity extends AppCompatActivity {
 
         // start play (send data)
         mediaPlayer.start();
-        System.out.println("The Frame "+currentFrameId);
-        currentFrameId ++;
+        System.out.println("The Frame " + currentFrameId);
+        currentFrameId++;
         sendTextButton.setEnabled(false);
     }
 
-    public byte[] byte2bits(byte[] dataBytes){
+    public byte[] byte2bits(byte[] dataBytes) {
         byte[] dataBits = new byte[dataBytes.length * 8];
         for (int i = 0; i < dataBytes.length * 8; i++) {
             if ((dataBytes[i / 8] & (1 << (7 - (i % 8)))) > 0) {
@@ -446,6 +504,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+        System.out.println("Wave Length: "+wave.length);
         // save temp file
         String filename = getExternalFilesDir("").getAbsolutePath() + "/raw.wav";
         System.out.println(filename);
@@ -486,9 +545,14 @@ public class MainActivity extends AppCompatActivity {
         mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
             @Override
             public void onCompletion(MediaPlayer mp) {
-                int totalFrames = (int) Math.ceil((double) currentTextBytes.length / FRAME_MAX_LENGTH);
-                if(currentFrameId < totalFrames){
-                    sendCurrentFrame();
+                if (!isLocateRecving && !isLocateSending && TA3Align==-1 && TB3Align == -1) {
+                    int totalFrames = (int) Math.ceil((double) currentTextBytes.length / FRAME_MAX_LENGTH);
+                    if (currentFrameId < totalFrames) {
+                        sendCurrentFrame();
+                    }
+                }
+                else{
+                    return;
                 }
                 sendTextButton.setEnabled(true);
             }
@@ -523,7 +587,7 @@ public class MainActivity extends AppCompatActivity {
             DataOutputStream dos = new DataOutputStream(bos);
 
             // get buffer size
-            bufferSize = Math.max(AudioRecord.getMinBufferSize(samplingRate, channelConfiguration, audioEncoding),bufferSize);
+            bufferSize = Math.max(AudioRecord.getMinBufferSize(samplingRate, channelConfiguration, audioEncoding), bufferSize);
             AudioRecord audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, samplingRate, channelConfiguration, audioEncoding, bufferSize);
 
             byte[] buffer = new byte[bufferSize];
@@ -537,13 +601,13 @@ public class MainActivity extends AppCompatActivity {
 
             // continue reading data
             while (isRecving) {
-                int bufferReadResult = audioRecord.read(buffer, base, Math.max(bufferSize - base,0));
+                int bufferReadResult = audioRecord.read(buffer, base, Math.max(bufferSize - base, 0));
                 for (int i = base; i < base + bufferReadResult; i++) {
                     dos.write(buffer[i]);
                     totalRecv++;
                 }
 
-                if(leftFlushs > 0){
+                if (leftFlushs > 0) {
                     base = 0;
                     leftFlushs--;
                     continue;
@@ -560,26 +624,28 @@ public class MainActivity extends AppCompatActivity {
                     int checkIndex = 0;
                     if (!isLocateRecving && !isLocateSending) {
                         checkIndex = processSignal(temp);
+                        System.out.println("Process Signal");
 //                        checkIndex = processSignal(buffer);
                     } else {
+                        System.out.println("Process Locate");
                         processLocate();
                     }
 
                     if (isPreamble) {
                         payloadBitsBuffer = new byte[temp.length - checkIndex];
-                        System.out.println("CheckIndex: "+(double)checkIndex / (windowWidth * 8 *2));
+                        System.out.println("CheckIndex: " + (double) checkIndex / (windowWidth * 8 * 2));
                         System.arraycopy(temp, checkIndex, payloadBitsBuffer, 0, temp.length - checkIndex);
                         base = 0;
                     } else {
                         // flush 2 buffer size
                         payloadBitsBuffer = new byte[0];
                         // TODO: fix buffer size bug
-                        byte[] bufferTemp = new byte[Math.max(temp.length - checkIndex,bufferSize)];
+                        byte[] bufferTemp = new byte[Math.max(temp.length - checkIndex, bufferSize)];
                         System.arraycopy(temp, checkIndex, bufferTemp, 0, temp.length - checkIndex);
                         buffer = bufferTemp;
                         base = temp.length - checkIndex;
 
-                        leftFlushs = 50;
+                        leftFlushs = 0;
                     }
                     continue;
 
@@ -610,72 +676,109 @@ public class MainActivity extends AppCompatActivity {
         if (isLocateRecving) {
             isPreamble = false;
             isLocateRecving = false;
+            isCheckAlign = true;
+            preambleBits = new byte[]{-1, -1, -1, -1, -1, -1, -1, -1};
+            currentPreamBitsNum = 0;
+
             if (isLocateSender) {
-                TA1 = System.currentTimeMillis();
+//                TA1 = System.currentTimeMillis();
+                TA1 = System.nanoTime();
+                System.out.println("TA1:"+ TA1);
                 isLocateSending = true;
             } else {
                 isLocateSending = true;
-                startLocate();
-
-                TB1 = System.currentTimeMillis();
+//                startLocate();
+//                TB1 = System.currentTimeMillis();
+                TB1 = System.nanoTime();
+                System.out.println("TB1:"+ TB1);
+                Thread thread= new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Thread.sleep(3000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        sendPreamble();
+                    }
+                });
+                thread.start();
             }
         } else {
             isLocateSending = false;
             isPreamble = false;
-            isRecving = false;
+//            isRecving = false;
+            isCheckAlign = true;
 
             if (isLocateSender) {
-                TA3 = System.currentTimeMillis();
+//                TA3 = System.currentTimeMillis();
+                TA3 = System.nanoTime();
+//                System.out.println("TA3:"+ TA3);
+                System.out.println("TA3ALIGN-TA1ALIGN: "+(double)(TA3Align-TA1Align) / (2*windowWidth) *10 +"ms");
                 reportLocateToServer();
+//                TA3Align=-1;
+                TA1Align= -1;
             } else {
-                TB3 = System.currentTimeMillis();
+//                TB3 = System.currentTimeMillis();
+                TB3 = System.nanoTime();
+                System.out.println("TB3ALIGN-TB1ALIGN: "+(double)(TB3Align-TB1Align) / (2*windowWidth) *10+"ms");
+                System.out.println("TB3:"+ TB3);
                 reportLocateToServer();
+//                TB3Align = -1;
+                TB1Align = -1;
             }
         }
     }
 
     void reportLocateToServer() {
-        try {
-            JSONObject body = new JSONObject();
-            String urlPath = "http://10.0.2.2:5000/locate/";
-            if(isLocateSender){
-                urlPath += "A";
-                body.put("TA1", TA1);
-                body.put("TA3", TA3);
-            }
-            else{
-                urlPath +="B";
-                body.put("TB1", TB1);
-                body.put("TB3", TB3);
-            }
-            URL url = new URL(urlPath);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setConnectTimeout(5000);
-            // 设置允许输出
-            conn.setDoOutput(true);
-            conn.setDoInput(true);
-            conn.setRequestMethod("POST");
-            // 设置contentType
-            conn.setRequestProperty("Content-Type", "application/json");
-            DataOutputStream os = new DataOutputStream(conn.getOutputStream());
-            String content = String.valueOf(body);
-            os.writeBytes(content);
-            os.flush();
-            os.close();
-            if (conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                conn.disconnect();
-            }
-        } catch (JSONException e) {
-            Log.e("Json Error", e.getMessage());
-        } catch (IOException io) {
-            Log.e("Url Error", io.getMessage());
+        if (isLocateSender) {
+            System.out.println("TA3-TA1: "+(TA3 - TA1));
+        } else {
+            System.out.println("TB3-TB1: "+(TB3 - TB1));
         }
+        showTime();
+
+//        try {
+//            JSONObject body = new JSONObject();
+//            String urlPath = "http://10.0.2.2:5000/locate/";
+//            if(isLocateSender){
+//                urlPath += "A";
+//                body.put("TA1", TA1);
+//                body.put("TA3", TA3);
+//            }
+//            else{
+//                urlPath +="B";
+//                body.put("TB1", TB1);
+//                body.put("TB3", TB3);
+//            }
+//            URL url = new URL(urlPath);
+//            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+//            conn.setConnectTimeout(5000);
+//            // 设置允许输出
+//            conn.setDoOutput(true);
+//            conn.setDoInput(true);
+//            conn.setRequestMethod("POST");
+//            // 设置contentType
+//            conn.setRequestProperty("Content-Type", "application/json");
+//            DataOutputStream os = new DataOutputStream(conn.getOutputStream());
+//            String content = String.valueOf(body);
+//            os.writeBytes(content);
+//            os.flush();
+//            os.close();
+//            if (conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
+//                conn.disconnect();
+//            }
+//        } catch (JSONException e) {
+//            Log.e("Json Error", e.getMessage());
+//        } catch (IOException io) {
+//            Log.e("Url Error", io.getMessage());
+//        }
     }
 
     public synchronized double[] IIRFilter(double[] signal, double[] a, double[] b) {
 
         double[] in = new double[b.length];
-        double[] out = new double[a.length-1];
+        double[] out = new double[a.length - 1];
 
         double[] outData = new double[signal.length];
 
@@ -687,13 +790,13 @@ public class MainActivity extends AppCompatActivity {
             //calculate y based on a and b coefficients
             //and in and out.
             float y = 0;
-            for(int j = 0 ; j < b.length ; j++){
+            for (int j = 0; j < b.length; j++) {
                 y += b[j] * in[j];
 
             }
 
-            for(int j = 0;j < a.length-1;j++){
-                y -= a[j+1] * out[j];
+            for (int j = 0; j < a.length - 1; j++) {
+                y -= a[j + 1] * out[j];
             }
 
             //shift the out array
@@ -722,9 +825,9 @@ public class MainActivity extends AppCompatActivity {
 
         for (int i = 0; i < bitsLength; i++) {
             double[] x = new double[FFT_LEN];
-            System.arraycopy(signalData,i * windowWidth,x,0,windowWidth);
-            for(int j=windowWidth;j<FFT_LEN;j++){
-                x[j]=0;
+            System.arraycopy(signalData, i * windowWidth, x, 0, windowWidth);
+            for (int j = windowWidth; j < FFT_LEN; j++) {
+                x[j] = 0;
             }
 
 //            IirFilterCoefficients iirFilterCoefficients;
@@ -749,11 +852,10 @@ public class MainActivity extends AppCompatActivity {
 
 
             int argMaxIndex = argMax(z, (int) ((double) ThresholdDownFrequency / samplingRate * FFT_LEN), (int) ((double) ThresholdUpFrequency / samplingRate * FFT_LEN));
-            if(!isCheckAlign){
+            if (!isCheckAlign) {
                 System.out.println(argMaxIndex + " "+z[argMaxIndex]);
-//                System.out.println(z[indexForOne]);
-//                System.out.println(z[indexForZero]);
             }
+//            System.out.println(argMaxIndex + " "+z[argMaxIndex]);
 
             if (Math.abs(argMaxIndex - indexForOne) <= 4 && z[argMaxIndex] >= 100) {
                 dataBits[i] = 1;
@@ -761,7 +863,7 @@ public class MainActivity extends AppCompatActivity {
                 dataBits[i] = 0;
             } else {
                 if (isPreamble) {
-                    if (max(z,indexForOne-2,indexForOne+3) > max(z,indexForZero-2,indexForZero+3)) {
+                    if (max(z, indexForOne - 2, indexForOne + 3) > max(z, indexForZero - 2, indexForZero + 3)) {
                         dataBits[i] = 1;
                     } else {
                         dataBits[i] = 0;
@@ -778,6 +880,18 @@ public class MainActivity extends AppCompatActivity {
 //                    dataBits[i] = 0;
 //                }
 //            }
+        }
+
+        if(isLocateSender){
+            if(TA1Align==0 && TA3Align==-1){
+                TA3Align = buffer.length;
+                System.out.println("Warning!!!!!!");
+            }
+        }else{
+            if(TB1Align==0 && TB3Align==-1){
+                TB3Align =buffer.length;
+                System.out.println("Warning!!!!!!");
+            }
         }
 
         return dataBits;
@@ -813,29 +927,29 @@ public class MainActivity extends AppCompatActivity {
 
         if (payloadBase == -1) {
             payloadLength = (int) dataBytes[0] & 0xff;
-            payloadLength = payloadLength & 0x000f;
+//            payloadLength = payloadLength & 0x000f;
             payloadBase = 0;
 
             if (payloadLength == 0) {
                 isPreamble = false;
-                return 2*8 * windowWidth * 2;
+                return 2 * 8 * windowWidth * 2;
             }
 
-            if(leftFrames ==0){
+            if (leftFrames == 0) {
                 int totalFrames = (int) dataBytes[1] & 0xff;
                 leftFrames = totalFrames;
                 System.out.println("FrameLength: " + leftFrames);
             }
             leftFrames--;
-            if(leftFrames!=0){
-                payloadLength = 10;
+            if (leftFrames != 0) {
+                payloadLength = FRAME_MAX_LENGTH;
             }
             System.out.println("PayloadLength: " + payloadLength);
 
-            if(leftFrames < 0 ){
+            if (leftFrames < 0) {
                 isPreamble = false;
                 leftFrames = 0;
-                return 2*8 * windowWidth * 2;
+                return 2 * 8 * windowWidth * 2;
             }
 
             System.out.println("Left Frames: " + leftFrames);
@@ -856,11 +970,14 @@ public class MainActivity extends AppCompatActivity {
                 currentPreamBitsNum = 0;
 
                 byte[] temp = new byte[totalPayload.length + payload.length];
-                System.arraycopy(totalPayload,0,temp,0,totalPayload.length);
-                System.arraycopy(payload,0,temp,0,payload.length);
+                System.arraycopy(totalPayload, 0, temp, 0, totalPayload.length);
+                System.arraycopy(payload, 0, temp, totalPayload.length, payload.length);
                 totalPayload = temp;
 
-                if(leftFrames==0){
+                System.out.println("DEBUG TOTALPAYLOAD");
+//                debugBytes(totalPayload);
+
+                if (leftFrames == 0) {
                     showRecvText();
                 }
 
@@ -879,18 +996,38 @@ public class MainActivity extends AppCompatActivity {
                 isCheckAlign = true;
                 currentPreamBitsNum = 0;
                 preambleBits = new byte[]{-1, -1, -1, -1, -1, -1, -1, -1};
-                byte[] temp = new byte[totalPayload.length + payload.length];
-                System.arraycopy(totalPayload,0,temp,0,totalPayload.length);
-                System.arraycopy(payload,0,temp,0,payload.length);
-                totalPayload = temp;
 
-                if(leftFrames==0){
+                byte[] temp = new byte[totalPayload.length + payload.length];
+                System.arraycopy(totalPayload, 0, temp, 0, totalPayload.length);
+                System.arraycopy(payload, 0, temp, totalPayload.length, payload.length);
+
+                totalPayload = temp;
+                System.out.println("DEBUG TOTALPAYLOAD");
+//                debugBytes(totalPayload);
+
+                if (leftFrames == 0) {
                     showRecvText();
                 }
 
                 return res;
             }
         }
+    }
+
+    void showTime(){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                // Stuff that updates the UI
+                if(isLocateSender){
+                    timeTextInput.setText(String.valueOf((double)(TA3Align-TA1Align)/(2*441) * 10));
+                }
+                else{
+                    timeTextInput.setText(String.valueOf((double)(TB3Align-TB1Align)/(2*441) * 10));
+                }
+
+            }
+        });
     }
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
@@ -918,27 +1055,26 @@ public class MainActivity extends AppCompatActivity {
 
                 byte[] textBits = byte2bits(textBytes);
 
-                int accuracyBitsNum=0;
-                for(int i=0;i<textBits.length && i<recvBits.length;i++){
-                    if(recvBits[i]==textBits[i]){
+                int accuracyBitsNum = 0;
+                for (int i = 0; i < textBits.length && i < recvBits.length; i++) {
+                    if (recvBits[i] == textBits[i]) {
                         accuracyBitsNum++;
-                    }
-                    else{
-                        System.out.println("ERROR "+i);
+                    } else {
+                        System.out.println("ERROR " + i);
                     }
                 }
 
                 System.out.println(accuracyBitsNum);
 
-                double accuracy = (double)accuracyBitsNum / textBits.length;
+                double accuracy = (double) accuracyBitsNum / textBits.length;
 
-                @SuppressLint("DefaultLocale") String result = String.format("%.2f",accuracy * 100);
+                @SuppressLint("DefaultLocale") String result = String.format("%.2f", accuracy * 100);
 
                 result += "%";
 
                 accuracyTextInput.setText(result);
-                System.out.println("Recv: "+recvBits.length);
-                System.out.println("Send: "+textBits.length);
+                System.out.println("Recv: " + recvBits.length);
+                System.out.println("Send: " + textBits.length);
 
                 totalPayload = new byte[0];
             }
@@ -975,17 +1111,17 @@ public class MainActivity extends AppCompatActivity {
         return res / (aMod * bMod);
     }
 
-    public double max(double[] data , int start,int end){
+    public double max(double[] data, int start, int end) {
         double res = data[start];
-        for(int i=start;i<end;i++){
-            if(data[i]>res){
-                res=data[i];
+        for (int i = start; i < end; i++) {
+            if (data[i] > res) {
+                res = data[i];
             }
         }
-        return  res;
+        return res;
     }
 
-    public int[] checkAlign(byte[] buffer){
+    public int[] checkAlign(byte[] buffer) {
         double[] signalData = new double[buffer.length / 2];
         for (int i = 0; i < buffer.length / 2; i++) {
             short temp = (short) ((((short) buffer[2 * i + 1]) << 8) + buffer[2 * i]);
@@ -995,11 +1131,11 @@ public class MainActivity extends AppCompatActivity {
 
         int rate = 10;
 
-        double[] fftValues = new double[(signalData.length - windowWidth +1)/rate];
+        double[] fftValues = new double[(signalData.length - windowWidth + 1) / rate];
 
-        for(int i=0;i<fftValues.length;i++) {
+        for (int i = 0; i < fftValues.length; i++) {
             double[] x = new double[FFT_LEN];
-            System.arraycopy(signalData, i*rate , x, 0, windowWidth);
+            System.arraycopy(signalData, i * rate, x, 0, windowWidth);
             for (int j = windowWidth; j < FFT_LEN; j++) {
                 x[j] = 0;
             }
@@ -1020,43 +1156,99 @@ public class MainActivity extends AppCompatActivity {
 
         }
 
-        int peakIndex = argMax(fftValues,0,fftValues.length);
+        int peakIndex = argMax(fftValues, 0, fftValues.length);
 
 //        System.out.println("PeakIndex "+peakIndex);
 //        System.out.println("Value "+fftValues[peakIndex]);
 
-        int[] res= new int[2];
-        res[0]=0;
-        res[1]=fftValues.length * rate *2;
+        int[] res = new int[2];
+        res[0] = 0;
+        res[1] = fftValues.length * rate * 2;
 
-        if(fftValues[peakIndex] <= 100){
-            res[0]=0;
-            res[1]=fftValues.length * rate *2;
-//            System.out.println("Too Low");
-            return  res;
+
+        // Threshold
+        int Threshold = isLocateRecving || isLocateSending ? 1 :100;
+        if(isLocateSending && isLocateSender){
+            Threshold = 100;
+        }
+        if(isLocateSending && !isLocateSender){
+            Threshold = 10;
         }
 
-        while(peakIndex >= 2 * windowWidth / rate){
-            System.out.println(fftValues[peakIndex-2*windowWidth / rate]);
-            if(fftValues[peakIndex-2*windowWidth / rate]>=10){
-                peakIndex = peakIndex - 2*windowWidth /rate;
-                System.out.println("Left Shift!!!");
+        if (fftValues[peakIndex] <= Threshold) {
+            res[0] = 0;
+            res[1] = fftValues.length * rate * 2;
+            if(fftValues[peakIndex]>1){
+                System.out.println("Peak Value: "+fftValues[peakIndex]);
+            }
+
+            if(isLocateSender){
+                if(TA1Align == 0){
+                    TA3Align += fftValues.length * rate * 2;
+                    System.out.println("TA3Align: "+TA3Align);
+                }
             }
             else{
+                if(TB1Align==0){
+                    TB3Align += fftValues.length * rate * 2;
+                    System.out.println("TB3Align: "+TB3Align);
+                }
+            }
+
+
+//            System.out.println("Too Low");
+            return res;
+        }
+
+        while (peakIndex >= 2 * windowWidth / rate) {
+            System.out.println("Left Values: "+fftValues[peakIndex - 2 * windowWidth / rate]);
+            if (fftValues[peakIndex - 2 * windowWidth / rate] >= 10) {
+                peakIndex = peakIndex - 2 * windowWidth / rate;
+                System.out.println("Left Shift!!!");
+            } else {
                 break;
             }
         }
 
-        if(peakIndex == fftValues.length -1){
+        if (peakIndex == fftValues.length - 1) {
             System.out.println("Going to Peak!");
-            res[0]=0;
-            res[1]=fftValues.length * rate *2;
+            res[0] = 0;
+            res[1] = fftValues.length * rate * 2;
+
+            if(isLocateSender){
+                if(TA1Align == 0){
+                    TA3Align += fftValues.length * rate * 2;
+                    System.out.println("TA3Align: "+TA3Align);
+                }
+            }
+            else{
+                if(TB1Align==0){
+                    TB3Align += fftValues.length * rate * 2;
+                    System.out.println("TB3Align: "+TB3Align);
+                }
+            }
+
             return res;
         }
 
-        res[0]=1;
-        res[1]=peakIndex * 2 * rate;
-        return  res;
+        System.out.println("Peak Value: "+fftValues[peakIndex]);
+        res[0] = 1;
+        res[1] = peakIndex * 2 * rate;
+
+        if(isLocateSender){
+            if(TA1Align == 0){
+                TA3Align += peakIndex *2 *rate;
+                System.out.println("TA3Align: "+TA3Align);
+            }
+        }
+        else{
+            if(TB1Align==0){
+                TB3Align += peakIndex *2 *rate;
+                System.out.println("TB3Align: "+TB3Align);
+            }
+        }
+
+        return res;
 
 //        if(peakIndex >  (double)fftValues.length *7 /8){
 //            res[0]=0;
@@ -1074,18 +1266,26 @@ public class MainActivity extends AppCompatActivity {
 
 
     public int checkPreamble(byte[] buffer) {
+        if (isCheckAlign) {
+            int[] res = checkAlign(buffer);
+            if (res[0] != 0) {
+                isCheckAlign = false;
+
+                if(isLocateSender){
+                    TA1Align = 0;
+                }
+                else{
+                    TB1Align = 0;
+                }
+
+                System.out.println("Align: " + res[1]);
+            }
+            return res[1];
+        }
+
         byte[] dataBits = signal2DataBits(buffer);
         int bitsLength = dataBits.length;
 //        debugBits(dataBits);
-
-//        if(isCheckAlign) {
-//            int[] res = checkAlign(buffer);
-//            if (res[0] != 0) {
-//                isCheckAlign = false;
-//                System.out.println("Align: "+res[1]);
-//            }
-//            return res[1];
-//        }
 //        debugBits(dataBits);
         for (int i = 0; i < bitsLength; i++) {
             for (int j = 0; j < preambleBits.length - 1; j++) {
@@ -1094,11 +1294,20 @@ public class MainActivity extends AppCompatActivity {
             currentPreamBitsNum++;
             preambleBits[preambleBits.length - 1] = dataBits[i];
             double corrValue = corr(preambleBits, PREAMBLE_BITS);
-            if(corrValue >= 0.5){
-                debugBits(preambleBits);
-            }
-            if (corrValue >= 0.85 || currentPreamBitsNum==8) {
+//            if (corrValue >= 0.5) {
+//                debugBits(preambleBits);
+//            }
+            if (corrValue >= 0.85 || currentPreamBitsNum == 8) {
                 System.out.println("Check");
+                debugBits(preambleBits);
+
+                System.out.println("isLocateSending: "+isLocateSending);
+                System.out.println("isLocateRecing: "+isLocateRecving);
+                if(isLocateSending || isLocateRecving){
+                    processLocate();
+                    return (i + 1) * windowWidth * 2;
+                }
+
                 isPreamble = true;
 //                isCheckAlign = true;
                 return (i + 1) * windowWidth * 2;

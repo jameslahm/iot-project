@@ -22,4 +22,6 @@
     <string name="recv_locate">RECV LOCATE</string>
     <string name="accuracy">Accuracy</string>
     <string name="generate_text">GENERATE TEXT</string>
+    <string name="listen_locate">listen locate</string>
+    <string name="stop_locate">stop locate</string>
 </resources>
