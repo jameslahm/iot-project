@@ -2,7 +2,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-public class FFT {
+public class Locate {
 
     int n, m;
     static int samplingRate = 44100;
@@ -12,7 +12,7 @@ public class FFT {
     static int windowWidth = (int) (windowTime * samplingRate);
     static int FFT_LEN = 512;
 
-    static int BUF_SIZE = windowWidth * 4;
+    static int BUF_SIZE = windowWidth * 16;
     static int ThresholdDownFrequency = 5000;
     static int ThresholdUpFrequency = 11000;
 
@@ -20,7 +20,7 @@ public class FFT {
     double[] cos;
     double[] sin;
 
-    public FFT(int n) {
+    public Locate(int n) {
         this.n = n;
         this.m = (int) (Math.log(n) / Math.log(2));
 
@@ -113,13 +113,13 @@ public class FFT {
     }
 
     public static void main(String[] args) {
-        FFT fft = new FFT(FFT_LEN);
+        Locate fft = new Locate(FFT_LEN);
 
-        double time = 0;
+        int PeakNums = 2;
 
         FileInputStream in;
         try {
-            in = new FileInputStream("recv3.wav");
+            in = new FileInputStream("locatesender-record.wav");
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             return;
@@ -130,19 +130,20 @@ public class FFT {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        int num = 0;
-
-        byte[] temp = new byte[0];
-        boolean first = true;
         int peakIndex = 0;
 
         int AlignIndex = 0;
+
+        int tempIndex = 0;
 
         int base = 0;
 
         while (true) {
             try {
-                in.read(buffer, base, BUF_SIZE -base);
+                int res = in.read(buffer, base, BUF_SIZE - base);
+                if (res == -1) {
+                    break;
+                }
             } catch (IOException e1) {
                 // TODO Auto-generated catch block
                 e1.printStackTrace();
@@ -181,132 +182,64 @@ public class FFT {
 
             peakIndex = argMax(fftValues, 0, fftValues.length);
 
-            System.out.println("PeakIndex " + peakIndex);
-            System.out.println("Value " + fftValues[peakIndex]);
 
-            if (fftValues[peakIndex] < 200){
-                AlignIndex += fftValues.length * 10;
-                base = buffer.length - fftValues.length * 10 *2;
-                
+            base = buffer.length - fftValues.length * 10 * 2;
+
+            if (fftValues[peakIndex] < 10) {
+                tempIndex += fftValues.length * 10;
+                base = buffer.length - fftValues.length * 10 * 2;
+
                 byte[] temp3 = new byte[base];
-                System.arraycopy(buffer,0,temp3,0, base);
-                System.arraycopy(temp3, 0,buffer , 0, base);
+                System.arraycopy(buffer, buffer.length - base, temp3, 0, base);
+                System.arraycopy(temp3, 0, buffer, 0, base);
 
-                System.out.println("Two Low");
+                // System.out.println("Two Low");
                 continue;
             }
 
-            if(peakIndex == fftValues.length-1){
-                AlignIndex += peakIndex * 10;
-                base = buffer.length - peakIndex *10 *2;
-                
-                byte[] temp3 = new byte[base];  
-                System.arraycopy(buffer,peakIndex *10*2,temp3,0, base);
-                System.arraycopy(temp3, 0,buffer , 0, base);
+            if (peakIndex == fftValues.length - 1) {
+                tempIndex += fftValues.length * 10;
+                base = buffer.length - fftValues.length * 10 * 2;
+                byte[] temp3 = new byte[base];
+                System.arraycopy(buffer, buffer.length - base, temp3, 0, base);
+                System.arraycopy(temp3, 0, buffer, 0, base);
                 System.out.println("Going Peak");
                 continue;
             }
 
-            temp = new byte[BUF_SIZE - peakIndex * 2 * 10];
-            AlignIndex += peakIndex * 10;
-            System.arraycopy(buffer, peakIndex * 2 * 10, temp, 0, BUF_SIZE - peakIndex * 2 * 10);
-            System.out.println(AlignIndex);
-            break;
-        }   
-        
-        while (true) {
-            try {
-                if (first) {
-                    System.arraycopy(temp, 0, buffer, 0, BUF_SIZE - peakIndex * 2 * 10);
-                    in.read(buffer, BUF_SIZE - peakIndex * 2 * 10, peakIndex * 2 * 10);
-                    first = false;  
-                } else {
-                    if (in.read(buffer, 0, BUF_SIZE) == -1) {
-                        break;
-                    }
-                    ;
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
+            if (peakIndex >= 2 * windowWidth / 10) {
+                if (fftValues[peakIndex - 2 * windowWidth / 10] >= 10) {
+                    System.out.println("Left Shift!!!");
+                    System.out.println(fftValues[peakIndex - 2 * windowWidth / 10]);
+                } 
             }
 
-            // transfer buffer to signal data
-            double[] signalData = new double[buffer.length / 2];
-            for (int i = 0; i < buffer.length / 2; i++) {
-                short temp2 = (short) (((short) (buffer[2 * i + 1]) << 8) + buffer[2 * i]);
-                signalData[i] = (double) temp2 / Short.MAX_VALUE;
-                // System.out.println(signalData[i]);
-            }
+            // temp = new byte[BUF_SIZE - peakIndex * 2 * 10];
 
-            int bitsLength = signalData.length / windowWidth;
-            byte[] dataBits = new byte[bitsLength];
+            tempIndex += peakIndex * 10;
+            // System.arraycopy(buffer, peakIndex * 2 * 10, temp, 0, BUF_SIZE - peakIndex *
+            // 2 * 10);
 
-            for (int i = 0; i < bitsLength; i++) {
-                time += 0.01;
-                // System.out.println("Time: "+time);
-                double[] x = new double[FFT_LEN];
-                System.arraycopy(signalData, i * windowWidth, x, 0, windowWidth);
-                // System.out.println(windowWidth);
-                // System.out.println(FFT_LEN);
-                for (int j = windowWidth; j < FFT_LEN; j++) {
-                    x[j] = 0;
-                }
-                double[] y = new double[FFT_LEN];
-                for (int j = 0; j < FFT_LEN; j++) {
-                    y[j] = 0;
-                }
-                fft.fft(x, y);
-
-                int indexForOne = (int) ((double) encodeFrequencyForOne / samplingRate * FFT_LEN);
-                int indexForZero = (int) ((double) encodeFrequencyForZero / samplingRate * FFT_LEN);
-
-                // System.out.println(indexForOne);
-                // System.out.println(indexForZero);
-
-                double[] z = new double[FFT_LEN];
-
-                for (int j = 0; j < FFT_LEN; j++) {
-                    z[j] = Math.pow(x[j], 2) + Math.pow(y[j], 2);
-                    // System.out.println(z[j]);
-                }
-
-                int argMaxIndex = argMax(z, (int) ((double) ThresholdDownFrequency / samplingRate * FFT_LEN),
-                        (int) ((double) ThresholdUpFrequency / samplingRate * FFT_LEN));
-                // int argMaxIndex = argMax(z, (int) ((double) 0 / samplingRate * FFT_LEN),
-                //         (int) ((double) samplingRate / samplingRate * FFT_LEN));
-                // System.out.println(argMaxIndex + " " + z[argMaxIndex]);
-
-                // System.out.println("Hello");
-
-                if (Math.abs(argMaxIndex - indexForOne) <= 2 && z[argMaxIndex] >= 200) {
-                    // System.out.println(time);
-                    dataBits[i] = 1;
-                    System.out.print(dataBits[i]);
-                    num++;
-                } else if (Math.abs(argMaxIndex - indexForZero) <= 2 && z[argMaxIndex] >= 100) {
-                    // System.out.println(time);
-                    dataBits[i] = 0;
-                    System.out.print(dataBits[i]);
-                    num++;
-                } else {
-                    // System.out.println(time);
-                    // System.out.println("Attention");
-                    dataBits[i] = (byte) 0xff;
-                }
-                if(num % 8==0){
-                    System.out.println();
+            if (tempIndex - AlignIndex < 441 * 8) {
+                continue;
+            } else {
+                AlignIndex = tempIndex;
+                System.out.println("AlignIndex: " + AlignIndex);
+                System.out.println("PeakIndex " + peakIndex);
+                System.out.println("Value " + fftValues[peakIndex]);
+                PeakNums--;
+                if (PeakNums == 0) {
+                    break;
                 }
             }
         }
-        System.out.println(num);
 
         try {
             in.close();
         } catch (IOException e) {
+            // TODO Auto-generated catch block
             e.printStackTrace();
         }
-
-        System.out.println(time);
         // byte[] dataBytes = new byte[dataBits.length / 8];
         // int byteValue = 0;
         // for (int index = 0; index < dataBits.length; index++) {

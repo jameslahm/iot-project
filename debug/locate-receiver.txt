@@ -1,0 +1,187 @@
+
+12/05 17:22:04: Launching 'app' on HUAWEI VOG-AL00.
+App restart successful without requiring a re-install.
+$ adb shell am start -n "com.example.iot_project/com.example.iot_project.MainActivity" -a android.intent.action.MAIN -c android.intent.category.LAUNCHER
+Connected to process 26401 on device 'huawei-vog_al00-MQS0219718011725'.
+Capturing and displaying logcat messages from application. This behavior can be disabled in the "Logcat output" section of the "Debugger" settings page.
+D/HwFrameworkSecurityPartsFactory: HwFrameworkSecurityPartsFactory in.
+I/HwFrameworkSecurityPartsFactory: add HwFrameworkSecurityPartsFactory to memory.
+D/BehaviorCollectManager: hook process for AI virus second
+I/BehaviorCollectManager: bindAnalyzerService: huawei.android.security.IAppBehaviorDataAnalyzer$Stub$Proxy@b629d5c pid:26401
+I/ple.iot_projec: QarthPatchMonintor::Init
+    QarthPatchMonintor::StartWatch
+    QarthPatchMonintor::WatchPackage: /data/hotpatch/fwkhotpatch/
+    QarthPatchMonintor::CheckAndWatchPatch: /data/hotpatch/fwkhotpatch/com.example.iot_project
+    QarthPatchMonintor::CheckAndWatchPatch: /data/hotpatch/fwkhotpatch/all
+    QarthPatchMonintor::Run
+I/ple.iot_projec: QarthPatchMonintor::Reading
+    QarthPatchMonintor::CheckNotifyEvent
+    QarthPatchMonintor::CheckNotifyEvent before read
+I/HwApiCacheMangerEx: apicache path=/storage/emulated/0 state=mounted key=com.example.iot_project#10274#256
+    need clear apicache,because volumes changed,oldCnt=0 newCnt=1
+I/HwApiCacheMangerEx: apicache path=/storage/emulated/0 state=mounted key=com.example.iot_project#10274#0
+    need clear apicache,because volumes changed,oldCnt=1 newCnt=1
+I/AwareBitmapCacher: init processName:com.example.iot_project pid=26401 uid=10274
+D/OpenGLRenderer: disableOutlineDraw is true
+I/iGraphics: [0020080c] pn: com.example.iot_project, p: 26401
+    [0030080c] no spt app: com.example.iot_project
+V/ActivityThread: callActivityOnCreate
+V/HwWidgetFactory: : successes to get AllImpl object and return....
+I/DecorView[]:  old windowMode:0 new windoMode:1
+I/OverScrollerOptimization: start init SmartSlideOverScroller and get the overscroller config
+    get the overscroller config
+W/ple.iot_projec: Accessing hidden method Landroid/view/View;->computeFitSystemWindows(Landroid/graphics/Rect;Landroid/graphics/Rect;)Z (greylist, reflection, allowed)
+    Accessing hidden method Landroid/view/ViewGroup;->makeOptionalFitsSystemWindows()V (greylist, reflection, allowed)
+I/System.out: Min2Pow 512.0
+D/ActivityThread: add activity client record, r= ActivityRecord{f8d60da token=android.os.BinderProxy@6173865 {com.example.iot_project/com.example.iot_project.MainActivity}} token= android.os.BinderProxy@6173865
+I/RmeSchedManager: init Rme, version is: v1.0
+D/HiTouch_PressGestureDetector: onAttached, package=com.example.iot_project, windowType=1, mHiTouchRestricted=false
+D/mali_winsys: EGLint new_window_surface(egl_winsys_display *, void *, EGLSurface, EGLConfig, egl_winsys_surface **, EGLBoolean) returns 0x3000
+W/Gralloc3: mapper 3.x is not supported
+I/HwViewRootImpl: removeInvalidNode jank list is null
+D/OpenGLRenderer: disableOutlineDraw is true
+D/DecorView: showOrHideHighlightView: hasFocus=true; winMode=1; isMrgNull=true
+W/InputMethodManager: startInputReason = 1
+W/InputMethodManager: startInputReason = 5
+I/AwareBitmapCacher: init lrucache size: 2097152 pid=26401
+I/Hwaps: APS: EventAnalyzed: initAPS: version is 10.1.0.18
+D/Hwaps: Fpsrequest create,type:EXACTLY_IDENTIFY
+I/hwaps: HwAps: JNI_OnLoad
+D/Hwaps: Fpsrequest create,type:EXACTLY_IDENTIFY
+D/Hwaps: Fpsrequest create,type:OPENGL_SETTING
+    FpsController create
+D/Hwaps: APS: EventAnalyzed: reInitFpsPara :mBaseFps = 60; mMaxFps = 60
+W/Settings: Setting device_provisioned has moved from android.provider.Settings.Secure to android.provider.Settings.Global.
+V/HiTouch_HiTouchSensor: User setup is finished.
+W/HwApsManager: HwApsManagerService, registerCallback, start !
+D/Hwaps: APS: EventAnalyzed: registerCallbackInApsManagerService, mPkgName:com.example.iot_project; result = true
+V/AudioManager: querySoundEffectsEnabled...
+I/HwApiCacheMangerEx: apicache path=/storage/emulated/0 state=mounted key=com.example.iot_project#10274#256
+    need clear apicache,because volumes changed,oldCnt=1 newCnt=1
+I/System.out: /storage/emulated/0/Android/data/com.example.iot_project/files/raw_recv.wav
+I/HwAudioRecordImpl: HwAudioRecordImpl
+I/HwAudioRecordImpl: sendStateChangedIntent, state=3
+I/System.out: Left Values: 0.1105303733175487
+    Peak Value: 42.68415332131937
+    Align: 2200
+I/System.out: 70 42.68415332131937
+    70 16.5651723131861
+    70 11.321090682029647
+I/System.out: 68 8.64233307023249
+    70 18.759189372958716
+I/System.out: 68 8.070273890857354
+    70 2.855794471714721
+    70 1.5492646061047077
+    Warning!!!!!!
+    Check
+I/System.out: -1 -1 -1 -1 -1 -1 -1 -1 
+    isLocateSending: false
+    isLocateRecing: true
+    TB1:105459654174011
+I/System.out: Peak Value: 1.9049496896671934
+I/System.out: TB3Align: 13216
+I/System.out: TB3Align: 19376
+I/System.out: TB3Align: 25536
+I/System.out: TB3Align: 31696
+I/System.out: TB3Align: 37856
+I/System.out: TB3Align: 44016
+I/System.out: TB3Align: 50176
+I/System.out: TB3Align: 56336
+I/System.out: TB3Align: 62496
+I/System.out: TB3Align: 68656
+I/System.out: TB3Align: 74816
+I/System.out: TB3Align: 80976
+I/System.out: TB3Align: 87136
+I/System.out: TB3Align: 93296
+I/System.out: TB3Align: 99456
+I/System.out: TB3Align: 105616
+I/System.out: TB3Align: 111776
+I/System.out: TB3Align: 117936
+I/System.out: TB3Align: 124096
+I/System.out: TB3Align: 130256
+I/System.out: TB3Align: 136416
+I/System.out: TB3Align: 142576
+I/System.out: TB3Align: 148736
+I/System.out: TB3Align: 154896
+I/System.out: TB3Align: 161056
+I/System.out: TB3Align: 167216
+I/System.out: TB3Align: 173376
+I/System.out: TB3Align: 179536
+I/System.out: TB3Align: 185696
+I/System.out: TB3Align: 191856
+I/System.out: TB3Align: 198016
+I/System.out: TB3Align: 204176
+I/System.out: TB3Align: 210336
+I/System.out: TB3Align: 216496
+I/System.out: TB3Align: 222656
+I/System.out: TB3Align: 228816
+I/System.out: TB3Align: 234976
+I/System.out: TB3Align: 241136
+I/System.out: TB3Align: 247296
+I/System.out: TB3Align: 253456
+I/System.out: TB3Align: 259616
+I/System.out: TB3Align: 265776
+I/System.out: 0 10101010
+    Wave Length: 7056
+I/System.out: /storage/emulated/0/Android/data/com.example.iot_project/files/raw.wav
+I/System.out: 7056
+I/System.out: Sat Dec 05 17:22:19 GMT+08:00 2020
+I/System.out: TB3Align: 271936
+I/System.out: /storage/emulated/0/Android/data/com.example.iot_project/files/raw.wav
+    /storage/emulated/0/Android/data/com.example.iot_project/files/Sat Dec 05 17:22:19 GMT+08:00 2020.wav
+I/MediaPlayerNative: prepare MediaPlayer(0x7cfd909300)
+D/MediaPlayerNative: Message: MEDIA_PREPARED(1), ext1=0, ext2=0x0
+I/MediaPlayerNative: prepare complete - status=0 MediaPlayer(0x7cfd909300)
+V/PlayerBase: baseStart() piid=17647
+I/MediaPlayer: [HSM] stayAwake true uid: 10274, pid: 26401
+W/MediaPlayerNative: Action:start, CurrentState:MEDIA_PLAYER_STARTED
+I/System.out: Send Preamble
+D/MediaPlayerNative: Message: Unknown MediaEventType(6), ext1=0, ext2=0x0
+I/System.out: TB3Align: 278096
+D/MediaPlayerNative: Message: MEDIA_PLAYBACK_COMPLETE(2), ext1=0, ext2=0x0
+V/PlayerBase: baseStop() piid=17647
+I/MediaPlayer: [HSM] stayAwake false uid: 10274, pid: 26401
+I/System.out: TB3Align: 284256
+I/System.out: TB3Align: 290416
+I/System.out: TB3Align: 296576
+I/System.out: Left Values: 9.848219336283178E-4
+I/System.out: Peak Value: 2335.4799664796083
+    TB3Align: 302636
+    Align: 6060
+I/System.out: 70 2335.4799664796083
+I/System.out: 116 3657.0352002576037
+    70 1309.6532319923508
+    116 3306.521645789026
+    70 1258.7858720530362
+    116 3299.025599815122
+I/System.out: 70 808.6981928257198
+    116 8.338836536276041
+    Check
+    1 0 1 0 1 0 1 -1 
+    isLocateSending: true
+    isLocateRecing: false
+    TB3ALIGN-TB1ALIGN: 3431.2471655328795ms
+I/System.out: TB3:105463055750573
+    TB3-TB1: 3401576562
+I/HwViewRootImpl: removeInvalidNode all the node in jank list is out of time
+I/System.out: Peak Value: 1.1042575524693456
+V/AudioManager: querySoundEffectsEnabled...
+I/HwAudioRecordImpl: sendStateChangedIntent, state=1
+I/System.out: 688548
+I/System.out: Sat Dec 05 17:22:22 GMT+08:00 2020
+I/System.out: /storage/emulated/0/Android/data/com.example.iot_project/files/raw_recv.wav
+    /storage/emulated/0/Android/data/com.example.iot_project/files/Sat Dec 05 17:22:22 GMT+08:00 2020.wav
+W/InputMethodManager: startInputReason = 8
+E/ResMng NATIVE_MSG_FILTER: endActivityTransaction: margin state not match
+E/ResMng NATIVE_MSG_FILTER: endActivityTransaction: margin state not match
+E/ResMng NATIVE_MSG_FILTER: endActivityTransaction: margin state not match
+W/libEGL: EGLNativeWindowType 0x7cf0e28bd0 disconnect failed
+D/DecorView: showOrHideHighlightView: hasFocus=false; winMode=1; isMrgNull=true
+I/ActivityThread: Handle window ActivityRecord{f8d60da token=android.os.BinderProxy@6173865 {com.example.iot_project/com.example.iot_project.MainActivity}} visibility: false
+E/ResMng NATIVE_MSG_FILTER: endActivityTransaction: margin state not match
+D/RtgSched: resetRtgSchedHandle failed enable:0
+D/ZrHung.AppEyeUiProbe: not watching, wait.
+I/AwareBitmapCacher: handleReleaseCache: pid=26401
+    init lrucache size: 2097152 pid=26401
+I/HwAudioRecordImpl: sendStateChangedIntent, state=1
+

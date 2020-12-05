@@ -1,0 +1,177 @@
+12/05 17:22:08: Launching 'app' on HUAWEI BKL-AL20.
+App restart successful without requiring a re-install.
+$ adb shell am start -n "com.example.iot_project/com.example.iot_project.MainActivity" -a android.intent.action.MAIN -c android.intent.category.LAUNCHER
+Connected to process 2986 on device 'huawei-bkl_al20-A7QDU18507000453'.
+Capturing and displaying logcat messages from application. This behavior can be disabled in the "Logcat output" section of the "Debugger" settings page.
+E/libc: Access denied finding property "runtime.mmitest.isrunning"
+W/re-initialized>: type=1400 audit(0.0:934587): avc: denied { read } for pid=2986 name="u:object_r:mmi_prop:s0" dev="tmpfs" ino=16540 scontext=u:r:untrusted_app:s0:c190,c256,c512,c768 tcontext=u:object_r:mmi_prop:s0 tclass=file permissive=0
+D/ActivityThread: Attach thread to application
+I/ple.iot_projec: QarthPatchMonintor::Init
+    QarthPatchMonintor::StartWatch
+    QarthPatchMonintor::WatchPackage: /data/hotpatch/fwkhotpatch/
+I/ple.iot_projec: QarthPatchMonintor::CheckAndWatchPatch: /data/hotpatch/fwkhotpatch/com.example.iot_project
+    QarthPatchMonintor::CheckAndWatchPatch: /data/hotpatch/fwkhotpatch/all
+    QarthPatchMonintor::Run
+I/HwApiCacheMangerEx: apicache path=/storage/emulated/0 state=mounted key=com.example.iot_project#10190#256
+I/ple.iot_projec: QarthPatchMonintor::Reading
+    QarthPatchMonintor::CheckNotifyEvent
+    QarthPatchMonintor::CheckNotifyEvent before read
+I/HwApiCacheMangerEx: apicache path=/storage/emulated/0 state=mounted key=com.example.iot_project#10190#0
+I/AwareBitmapCacher: init processName:com.example.iot_project pid=2986 uid=10190
+E/AwareLog: AtomicFileUtils: readFileLines file not exist: android.util.AtomicFile@4fcb2fe
+    AtomicFileUtils: readFileLines file not exist: android.util.AtomicFile@c95ca5f
+D/OpenGLRenderer: disableOutlineDraw is true
+V/ActivityThread: callActivityOnCreate
+V/HwWidgetFactory: : successes to get AllImpl object and return....
+I/OverScrollerOptimization: start init SmartSlideOverScroller and get the overscroller config
+    get the overscroller config
+W/ple.iot_projec: Accessing hidden method Landroid/view/View;->computeFitSystemWindows(Landroid/graphics/Rect;Landroid/graphics/Rect;)Z (greylist, reflection, allowed)
+W/ple.iot_projec: Accessing hidden method Landroid/view/ViewGroup;->makeOptionalFitsSystemWindows()V (greylist, reflection, allowed)
+I/System.out: Min2Pow 512.0
+D/ActivityThread: add activity client record, r= ActivityRecord{3dfaf7f token=android.os.BinderProxy@a076eb9 {com.example.iot_project/com.example.iot_project.MainActivity}} token= android.os.BinderProxy@a076eb9
+D/HiTouch_PressGestureDetector: onAttached, package=com.example.iot_project, windowType=1, mHiTouchRestricted=false
+I/iGraphics: [0020080c] pn: com.example.iot_project, p: 2986
+    [0030080c] no spt app: com.example.iot_project
+D/mali_winsys: EGLint new_window_surface(egl_winsys_display *, void *, EGLSurface, EGLConfig, egl_winsys_surface **, EGLBoolean) returns 0x3000
+W/Gralloc3: mapper 3.x is not supported
+E/: APS:IFLoad:importExternalFunctions, search function createNewHwApsUtils failed, dlsym err:undefined symbol: createNewHwApsUtils
+D/: APS:importExternalFunctions OK
+I/HwViewRootImpl: removeInvalidNode jank list is null
+D/OpenGLRenderer: disableOutlineDraw is true
+W/Settings: Setting device_provisioned has moved from android.provider.Settings.Secure to android.provider.Settings.Global.
+V/HiTouch_HiTouchSensor: User setup is finished.
+V/AudioManager: querySoundEffectsEnabled...
+I/System.out: /storage/emulated/0/Android/data/com.example.iot_project/files/raw_recv.wav
+W/Thread-3: type=1400 audit(0.0:934588): avc: granted { write } for pid=2986 name="files" dev="sdcardfs" ino=901146 scontext=u:r:untrusted_app:s0:c190,c256,c512,c768 tcontext=u:object_r:sdcardfs:s0 tclass=dir
+    type=1400 audit(0.0:934589): avc: granted { add_name } for pid=2986 name="raw_recv.wav" scontext=u:r:untrusted_app:s0:c190,c256,c512,c768 tcontext=u:object_r:sdcardfs:s0 tclass=dir
+I/HwViewRootImpl: removeInvalidNode all the node in jank list is out of time
+I/HwAudioRecordImpl: HwAudioRecordImpl
+    sendStateChangedIntent, state=3
+D/AwareBitmapCacher: handleInit switch not opened pid=2986
+V/AudioManager: querySoundEffectsEnabled...
+I/System.out: 0 10101010
+    Wave Length: 7056
+I/System.out: /storage/emulated/0/Android/data/com.example.iot_project/files/raw.wav
+W/ple.iot_project: type=1400 audit(0.0:934595): avc: granted { write } for pid=2986 name="files" dev="sdcardfs" ino=901146 scontext=u:r:untrusted_app:s0:c190,c256,c512,c768 tcontext=u:object_r:sdcardfs:s0 tclass=dir
+    type=1400 audit(0.0:934596): avc: granted { add_name } for pid=2986 name="raw.wav" scontext=u:r:untrusted_app:s0:c190,c256,c512,c768 tcontext=u:object_r:sdcardfs:s0 tclass=dir
+I/System.out: 7056
+I/System.out: Sat Dec 05 17:22:11 GMT+08:00 2020
+I/System.out: /storage/emulated/0/Android/data/com.example.iot_project/files/raw.wav
+    /storage/emulated/0/Android/data/com.example.iot_project/files/Sat Dec 05 17:22:11 GMT+08:00 2020.wav
+I/MediaPlayerNative: prepare MediaPlayer(0x73a6ee13c0)
+D/MediaPlayerNative: Message: MEDIA_PREPARED(1), ext1=0, ext2=0x0
+I/MediaPlayerNative: prepare complete - status=0 MediaPlayer(0x73a6ee13c0)
+D/MediaPlayerNative: [notify] : [1170] callback app listenerNotNull=1, send=1
+V/PlayerBase: baseStart() piid=1551
+I/MediaPlayer: [HSM] stayAwake true uid: 10190, pid: 2986
+D/MediaPlayerNative: Action:start, CurrentState:MEDIA_PLAYER_STARTED
+I/System.out: Send Preamble
+D/MediaPlayerNative: Message: Unknown MediaEventType(6), ext1=0, ext2=0x0
+    [notify] : [1170] callback app listenerNotNull=1, send=1
+D/MediaPlayerNative: [notify] : [1170] callback app listenerNotNull=1, send=1
+D/MediaPlayerNative: Message: MEDIA_PLAYBACK_COMPLETE(2), ext1=0, ext2=0x0
+    [notify] : [1170] callback app listenerNotNull=1, send=1
+    [notify] : [1170] callback app listenerNotNull=1, send=1
+V/PlayerBase: baseStop() piid=1551
+I/MediaPlayer: [HSM] stayAwake false uid: 10190, pid: 2986
+I/System.out: Left Values: 10.90622010687731
+    Left Shift!!!
+    Left Values: 0.0218628809368036
+    Peak Value: 10.90622010687731
+    Align: 3480
+I/System.out: 72 10.90622010687731
+I/System.out: 116 7754.6779050215455
+    70 20494.24394539889
+I/System.out: 116 2856.248909789485
+    70 13561.501357948393
+    116 2013.8533820376772
+I/System.out: 70 14129.682983927341
+I/System.out: 116 261.813610748461
+    Warning!!!!!!
+    Check
+I/System.out: -1 0 1 0 1 0 1 0 
+    isLocateSending: false
+    isLocateRecing: true
+    TA1:19572628663679
+I/System.out: Peak Value: 13.139566671821319
+    TA3Align: 13216
+I/System.out: TA3Align: 19376
+I/System.out: TA3Align: 25536
+I/System.out: TA3Align: 31696
+I/System.out: TA3Align: 37856
+I/System.out: TA3Align: 44016
+I/System.out: TA3Align: 50176
+I/System.out: TA3Align: 56336
+I/System.out: TA3Align: 62496
+I/System.out: TA3Align: 68656
+I/System.out: TA3Align: 74816
+I/System.out: TA3Align: 80976
+I/System.out: TA3Align: 87136
+I/System.out: TA3Align: 93296
+I/System.out: TA3Align: 99456
+I/System.out: TA3Align: 105616
+I/System.out: TA3Align: 111776
+I/System.out: TA3Align: 117936
+I/System.out: TA3Align: 124096
+I/System.out: TA3Align: 130256
+I/System.out: TA3Align: 136416
+I/System.out: TA3Align: 142576
+I/System.out: TA3Align: 148736
+I/System.out: TA3Align: 154896
+I/System.out: TA3Align: 161056
+I/System.out: TA3Align: 167216
+I/System.out: TA3Align: 173376
+I/System.out: TA3Align: 179536
+I/System.out: TA3Align: 185696
+I/System.out: TA3Align: 191856
+I/System.out: TA3Align: 198016
+I/System.out: TA3Align: 204176
+I/System.out: TA3Align: 210336
+I/System.out: TA3Align: 216496
+I/System.out: TA3Align: 222656
+I/System.out: TA3Align: 228816
+I/System.out: TA3Align: 234976
+I/System.out: TA3Align: 241136
+I/System.out: TA3Align: 247296
+I/System.out: TA3Align: 253456
+I/System.out: TA3Align: 259616
+I/System.out: TA3Align: 265776
+I/System.out: TA3Align: 271936
+I/System.out: TA3Align: 278096
+I/System.out: TA3Align: 284256
+I/System.out: TA3Align: 290416
+I/System.out: TA3Align: 296576
+I/System.out: TA3Align: 302736
+I/System.out: Left Values: 0.04558809559555871
+    Peak Value: 7213.329433646207
+    TA3Align: 304636
+    Align: 1900
+    70 7213.329433646207
+I/System.out: 69 949.6767838831067
+    70 5347.289239607875
+    69 574.6404056196113
+    70 5734.409811877892
+    69 723.646364431404
+I/System.out: 70 2082.157271670067
+    69 159.61632803217046
+    Check
+    1 1 1 1 1 1 1 1 
+    isLocateSending: true
+    isLocateRecing: false
+    TA3ALIGN-TA1ALIGN: 3453.9229024943315ms
+    TA3-TA1: 3476395312
+I/HwViewRootImpl: removeInvalidNode all the node in jank list is out of time
+I/System.out: Peak Value: 11.732260612268222
+I/System.out: Peak Value: 1.4792961274672602
+V/AudioManager: querySoundEffectsEnabled...
+I/HwAudioRecordImpl: sendStateChangedIntent, state=1
+I/System.out: 685668
+I/System.out: Sat Dec 05 17:22:17 GMT+08:00 2020
+I/System.out: /storage/emulated/0/Android/data/com.example.iot_project/files/raw_recv.wav
+    /storage/emulated/0/Android/data/com.example.iot_project/files/Sat Dec 05 17:22:17 GMT+08:00 2020.wav
+W/Thread-3: type=1400 audit(0.0:934624): avc: granted { read } for pid=2986 name="raw_recv.wav" dev="sdcardfs" ino=899753 scontext=u:r:untrusted_app:s0:c190,c256,c512,c768 tcontext=u:object_r:sdcardfs:s0 tclass=file
+    type=1400 audit(0.0:934625): avc: granted { read open } for pid=2986 path="/storage/emulated/0/Android/data/com.example.iot_project/files/raw_recv.wav" dev="sdcardfs" ino=899753 scontext=u:r:untrusted_app:s0:c190,c256,c512,c768 tcontext=u:object_r:sdcardfs:s0 tclass=file
+    type=1400 audit(0.0:934626): avc: granted { write } for pid=2986 name="files" dev="sdcardfs" ino=901146 scontext=u:r:untrusted_app:s0:c190,c256,c512,c768 tcontext=u:object_r:sdcardfs:s0 tclass=dir
+    type=1400 audit(0.0:934627): avc: granted { add_name } for pid=2986 name=536174204465632030352031373A32323A313720474D542B30383A303020323032302E776176 scontext=u:r:untrusted_app:s0:c190,c256,c512,c768 tcontext=u:object_r:sdcardfs:s0 tclass=dir
+    type=1400 audit(0.0:934628): avc: granted { create } for pid=2986 name=536174204465632030352031373A32323A313720474D542B30383A303020323032302E776176 scontext=u:r:untrusted_app:s0:c190,c256,c512,c768 tcontext=u:object_r:sdcardfs:s0:c190,c256,c512,c768 tclass=file
+

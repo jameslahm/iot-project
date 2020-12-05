@@ -34,7 +34,7 @@ if __name__ == "__main__":
     sampling_rate,data=wavfile.read(filename)
     print("Sampling_rate: ",sampling_rate)
     data=data/np.max(data)
-    data = data[101250:441*600]
+    data = data[107000 - 300:107340+ 441*8]
 
     decode_signal(data)
 
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     plt.ylabel('Frequency [Hz]')
     plt.xlabel('Time [sec]')
     # plt.ylim((9000,11000))
-    plt.xlim((0.0,0.25))
+    # plt.xlim((0.0,0.25))
     plt.savefig('{}_res_0.png'.format(filename))
 
     fig=plt.figure(figsize=(16,4))
