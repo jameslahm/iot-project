@@ -34,7 +34,7 @@ if __name__ == "__main__":
     sampling_rate,data=wavfile.read(filename)
     print("Sampling_rate: ",sampling_rate)
     data=data/np.max(data)
-    data = data[107000 - 300:107340+ 441*8]
+    data = data[187220-441*1: 187220+ 441*8]
 
     decode_signal(data)
 

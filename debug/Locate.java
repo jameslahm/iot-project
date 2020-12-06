@@ -119,7 +119,7 @@ public class Locate {
 
         FileInputStream in;
         try {
-            in = new FileInputStream("locatesender-record.wav");
+            in = new FileInputStream("sender.wav");
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             return;
@@ -185,7 +185,7 @@ public class Locate {
 
             base = buffer.length - fftValues.length * 10 * 2;
 
-            if (fftValues[peakIndex] < 10) {
+            if (fftValues[peakIndex] < 1000) {
                 tempIndex += fftValues.length * 10;
                 base = buffer.length - fftValues.length * 10 * 2;
 
@@ -220,7 +220,7 @@ public class Locate {
             // System.arraycopy(buffer, peakIndex * 2 * 10, temp, 0, BUF_SIZE - peakIndex *
             // 2 * 10);
 
-            if (tempIndex - AlignIndex < 441 * 8) {
+            if (tempIndex - AlignIndex < 441 * 8 * 10) {
                 continue;
             } else {
                 AlignIndex = tempIndex;

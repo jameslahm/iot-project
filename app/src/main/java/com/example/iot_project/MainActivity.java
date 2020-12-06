@@ -165,6 +165,9 @@ public class MainActivity extends AppCompatActivity {
     int TB1Align = -1;
     int TB3Align = -1;
 
+    int TA1AbsoluteIndex = 0;
+    int TB1AbsoluteIndex =0;
+
     // get permission
     private void GetPermission() {
         /*在此处插入运行时权限获取的代码*/
@@ -267,17 +270,22 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        stopLocateButton.setOnClickListener(new View.OnClickListener(){
+        stopLocateButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                isLocateSending =false;
+                isLocateSending = false;
                 isLocateRecving = false;
                 isLocateSender = false;
                 isRecving = false;
+                TA1Align = -1;
                 TA3Align = -1;
+
+                TB1Align = -1;
                 TB3Align = -1;
+                TA1AbsoluteIndex = 0;
+                TB1AbsoluteIndex = 0;
                 preambleBits = new byte[]{-1, -1, -1, -1, -1, -1, -1, -1};
-                isPreamble =false;
+                isPreamble = false;
                 isCheckAlign = true;
                 currentPreamBitsNum = 0;
                 startRecvButton.setEnabled(true);
@@ -294,10 +302,11 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        listenLocateButton.setOnClickListener(new View.OnClickListener(){
+        listenLocateButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 isLocateRecving = true;
+                isLocateSender = true;
                 startLocate();
             }
         });
@@ -424,7 +433,9 @@ public class MainActivity extends AppCompatActivity {
 
     public void sendPreamble() {
         byte[] dataBytes = new byte[1];
-        dataBytes[0] = PREAMBLE_BYTES[0];
+        for(int i=0;i<1;i++){
+            dataBytes[i] = (byte) 0x55;
+        }
 //        dataBytes[1] = PREAMBLE_BYTES[0];
         debugBytes(dataBytes);
         byte[] dataBits = byte2bits(dataBytes);
@@ -504,7 +515,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        System.out.println("Wave Length: "+wave.length);
+        System.out.println("Wave Length: " + wave.length);
         // save temp file
         String filename = getExternalFilesDir("").getAbsolutePath() + "/raw.wav";
         System.out.println(filename);
@@ -545,13 +556,12 @@ public class MainActivity extends AppCompatActivity {
         mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
             @Override
             public void onCompletion(MediaPlayer mp) {
-                if (!isLocateRecving && !isLocateSending && TA3Align==-1 && TB3Align == -1) {
+                if (!isLocateRecving && !isLocateSending && TA3Align == -1 && TB3Align == -1) {
                     int totalFrames = (int) Math.ceil((double) currentTextBytes.length / FRAME_MAX_LENGTH);
                     if (currentFrameId < totalFrames) {
                         sendCurrentFrame();
                     }
-                }
-                else{
+                } else {
                     return;
                 }
                 sendTextButton.setEnabled(true);
@@ -683,15 +693,15 @@ public class MainActivity extends AppCompatActivity {
             if (isLocateSender) {
 //                TA1 = System.currentTimeMillis();
                 TA1 = System.nanoTime();
-                System.out.println("TA1:"+ TA1);
+                System.out.println("TA1:" + TA1);
                 isLocateSending = true;
             } else {
                 isLocateSending = true;
 //                startLocate();
 //                TB1 = System.currentTimeMillis();
                 TB1 = System.nanoTime();
-                System.out.println("TB1:"+ TB1);
-                Thread thread= new Thread(new Runnable() {
+                System.out.println("TB1:" + TB1);
+                Thread thread = new Thread(new Runnable() {
                     @Override
                     public void run() {
                         try {
@@ -714,15 +724,15 @@ public class MainActivity extends AppCompatActivity {
 //                TA3 = System.currentTimeMillis();
                 TA3 = System.nanoTime();
 //                System.out.println("TA3:"+ TA3);
-                System.out.println("TA3ALIGN-TA1ALIGN: "+(double)(TA3Align-TA1Align) / (2*windowWidth) *10 +"ms");
+                System.out.println("TA3ALIGN-TA1ALIGN: " + (double) (TA3Align - TA1Align) / (2 * windowWidth) * 10 + "ms");
                 reportLocateToServer();
 //                TA3Align=-1;
-                TA1Align= -1;
+                TA1Align = -1;
             } else {
 //                TB3 = System.currentTimeMillis();
                 TB3 = System.nanoTime();
-                System.out.println("TB3ALIGN-TB1ALIGN: "+(double)(TB3Align-TB1Align) / (2*windowWidth) *10+"ms");
-                System.out.println("TB3:"+ TB3);
+                System.out.println("TB3ALIGN-TB1ALIGN: " + (double) (TB3Align - TB1Align) / (2 * windowWidth) * 10 + "ms");
+                System.out.println("TB3:" + TB3);
                 reportLocateToServer();
 //                TB3Align = -1;
                 TB1Align = -1;
@@ -732,9 +742,9 @@ public class MainActivity extends AppCompatActivity {
 
     void reportLocateToServer() {
         if (isLocateSender) {
-            System.out.println("TA3-TA1: "+(TA3 - TA1));
+            System.out.println("TA3-TA1: " + (TA3 - TA1));
         } else {
-            System.out.println("TB3-TB1: "+(TB3 - TB1));
+            System.out.println("TB3-TB1: " + (TB3 - TB1));
         }
         showTime();
 
@@ -853,7 +863,7 @@ public class MainActivity extends AppCompatActivity {
 
             int argMaxIndex = argMax(z, (int) ((double) ThresholdDownFrequency / samplingRate * FFT_LEN), (int) ((double) ThresholdUpFrequency / samplingRate * FFT_LEN));
             if (!isCheckAlign) {
-                System.out.println(argMaxIndex + " "+z[argMaxIndex]);
+                System.out.println(argMaxIndex + " " + z[argMaxIndex]);
             }
 //            System.out.println(argMaxIndex + " "+z[argMaxIndex]);
 
@@ -882,14 +892,14 @@ public class MainActivity extends AppCompatActivity {
 //            }
         }
 
-        if(isLocateSender){
-            if(TA1Align==0 && TA3Align==-1){
+        if (isLocateSender) {
+            if (TA1Align == 0 && TA3Align == -1) {
                 TA3Align = buffer.length;
                 System.out.println("Warning!!!!!!");
             }
-        }else{
-            if(TB1Align==0 && TB3Align==-1){
-                TB3Align =buffer.length;
+        } else {
+            if (TB1Align == 0 && TB3Align == -1) {
+                TB3Align = buffer.length;
                 System.out.println("Warning!!!!!!");
             }
         }
@@ -1014,16 +1024,17 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    void showTime(){
+    void showTime() {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 // Stuff that updates the UI
-                if(isLocateSender){
-                    timeTextInput.setText(String.valueOf((double)(TA3Align-TA1Align)/(2*441) * 10));
-                }
-                else{
-                    timeTextInput.setText(String.valueOf((double)(TB3Align-TB1Align)/(2*441) * 10));
+                if (isLocateSender) {
+                    timeTextInput.setText(String.valueOf((double) (TA3Align - TA1Align) / (2 * 441) * 10) + " "+String.valueOf(TA1AbsoluteIndex)+" "+String.valueOf(TA1AbsoluteIndex + TA3Align));
+                    System.out.println("TA1AbsoluteIndex: "+TA1AbsoluteIndex);
+                } else {
+                    timeTextInput.setText(String.valueOf((double) (TB3Align - TB1Align) / (2 * 441) * 10) + " "+String.valueOf(TB1AbsoluteIndex)+" "+String.valueOf(TB1AbsoluteIndex+TB3Align));
+                    System.out.println("TB1AbsoluteIndex: "+TB1AbsoluteIndex);
                 }
 
             }
@@ -1150,11 +1161,12 @@ public class MainActivity extends AppCompatActivity {
                 z[j] = Math.pow(x[j], 2) + Math.pow(y[j], 2);
             }
 
-            int indexForOne = (int) ((double) encodeFrequencyForOne / samplingRate * FFT_LEN);
+            int indexForZero = (int) ((double) encodeFrequencyForZero / samplingRate * FFT_LEN);
 
-            fftValues[i] = max(z, indexForOne - 4, indexForOne + 4);
 
+            fftValues[i] = max(z, indexForZero - 4, indexForZero + 4);
         }
+
 
         int peakIndex = argMax(fftValues, 0, fftValues.length);
 
@@ -1167,12 +1179,12 @@ public class MainActivity extends AppCompatActivity {
 
 
         // Threshold
-        int Threshold = isLocateRecving || isLocateSending ? 1 :100;
-        if(isLocateSending && isLocateSender){
-            Threshold = 100;
-        }
-        if(isLocateSending && !isLocateSender){
+        int Threshold = isLocateRecving || isLocateSending ? 200 : 10000;
+        if (isLocateSending && isLocateSender) {
             Threshold = 10;
+        }
+        if (isLocateSending && !isLocateSender) {
+            Threshold = 100;
         }
 
         if (fftValues[peakIndex] <= Threshold) {
@@ -1187,11 +1199,19 @@ public class MainActivity extends AppCompatActivity {
                     TA3Align += fftValues.length * rate * 2;
                     System.out.println("TA3Align: "+TA3Align);
                 }
+                else{
+                    TA1AbsoluteIndex += fftValues.length * rate * 2;
+                    System.out.println("TA1AbsoluteIndex: "+TA1AbsoluteIndex);
+                }
             }
             else{
                 if(TB1Align==0){
                     TB3Align += fftValues.length * rate * 2;
                     System.out.println("TB3Align: "+TB3Align);
+                }
+                else{
+                    TB1AbsoluteIndex += fftValues.length * rate * 2;
+                    System.out.println("TB1AbsoluteIndex: "+TB1AbsoluteIndex);
                 }
             }
 
@@ -1200,8 +1220,47 @@ public class MainActivity extends AppCompatActivity {
             return res;
         }
 
+        if(TA1Align == 0 || TB1Align ==0) {
+            if (isLocateSender) {
+                if (TA3Align <= windowWidth * 2 * 100) {
+                    res[0] = 0;
+                    res[1] = fftValues.length * rate * 2;
+                    if (fftValues[peakIndex] > 1) {
+                        System.out.println("Peak Value: " + fftValues[peakIndex]);
+                    }
+                    if (TA1Align == 0) {
+                        TA3Align += fftValues.length * rate * 2;
+                        System.out.println("TA3Align: " + TA3Align);
+                    }
+                    else{
+                        TA1AbsoluteIndex += fftValues.length * rate * 2;
+                        System.out.println("TA1AbsoluteIndex: "+TA1AbsoluteIndex);
+                    }
+//            System.out.println("Too Low");
+                    return res;
+                }
+            } else {
+                if (TB3Align <= windowWidth * 2 * 100) {
+                    res[0] = 0;
+                    res[1] = fftValues.length * rate * 2;
+                    if (fftValues[peakIndex] > 1) {
+                        System.out.println("Peak Value: " + fftValues[peakIndex]);
+                    }
+                    if (TB1Align == 0) {
+                        TB3Align += fftValues.length * rate * 2;
+                        System.out.println("TB3Align: " + TB3Align);
+                    }
+                    else{
+                        TB1AbsoluteIndex += fftValues.length * rate * 2;
+                        System.out.println("TB1AbsoluteIndex: "+TB1AbsoluteIndex);
+                    }
+//            System.out.println("Too Low");
+                    return res;
+                }
+            }
+        }
         while (peakIndex >= 2 * windowWidth / rate) {
-            System.out.println("Left Values: "+fftValues[peakIndex - 2 * windowWidth / rate]);
+            System.out.println("Left Values: " + fftValues[peakIndex - 2 * windowWidth / rate]);
             if (fftValues[peakIndex - 2 * windowWidth / rate] >= 10) {
                 peakIndex = peakIndex - 2 * windowWidth / rate;
                 System.out.println("Left Shift!!!");
@@ -1215,37 +1274,52 @@ public class MainActivity extends AppCompatActivity {
             res[0] = 0;
             res[1] = fftValues.length * rate * 2;
 
-            if(isLocateSender){
-                if(TA1Align == 0){
+            if (isLocateSender) {
+                if (TA1Align == 0) {
                     TA3Align += fftValues.length * rate * 2;
-                    System.out.println("TA3Align: "+TA3Align);
+                    System.out.println("TA3Align: " + TA3Align);
                 }
-            }
-            else{
-                if(TB1Align==0){
+                else{
+                    TA1AbsoluteIndex += fftValues.length * rate * 2;
+                    System.out.println("TA1AbsoluteIndex: "+TA1AbsoluteIndex);
+                }
+            } else {
+                if (TB1Align == 0) {
                     TB3Align += fftValues.length * rate * 2;
-                    System.out.println("TB3Align: "+TB3Align);
+                    System.out.println("TB3Align: " + TB3Align);
+                }
+                else{
+                    TB1AbsoluteIndex += fftValues.length * rate * 2;
+                    System.out.println("TB1AbsoluteIndex: "+TB1AbsoluteIndex);
                 }
             }
 
             return res;
         }
 
-        System.out.println("Peak Value: "+fftValues[peakIndex]);
+        System.out.println("Peak Value: " + fftValues[peakIndex]);
         res[0] = 1;
         res[1] = peakIndex * 2 * rate;
 
-        if(isLocateSender){
-            if(TA1Align == 0){
-                TA3Align += peakIndex *2 *rate;
-                System.out.println("TA3Align: "+TA3Align);
+        if (isLocateSender) {
+            if (TA1Align == 0) {
+                TA3Align += peakIndex * 2 * rate;
+                System.out.println("TA3Align: " + TA3Align);
             }
-        }
-        else{
-            if(TB1Align==0){
-                TB3Align += peakIndex *2 *rate;
-                System.out.println("TB3Align: "+TB3Align);
+            else{
+                TA1AbsoluteIndex += peakIndex * 2 * rate;
+                System.out.println("TA1AbsoluteIndex: "+TA1AbsoluteIndex);
             }
+        } else {
+            if (TB1Align == 0) {
+                TB3Align += peakIndex * 2 * rate;
+                System.out.println("TB3Align: " + TB3Align);
+            }
+            else{
+                TB1AbsoluteIndex += peakIndex * 2 * rate;
+                System.out.println("TB1AbsoluteIndex: "+TB1AbsoluteIndex);
+            }
+
         }
 
         return res;
@@ -1271,10 +1345,9 @@ public class MainActivity extends AppCompatActivity {
             if (res[0] != 0) {
                 isCheckAlign = false;
 
-                if(isLocateSender){
+                if (isLocateSender) {
                     TA1Align = 0;
-                }
-                else{
+                } else {
                     TB1Align = 0;
                 }
 
@@ -1301,9 +1374,9 @@ public class MainActivity extends AppCompatActivity {
                 System.out.println("Check");
                 debugBits(preambleBits);
 
-                System.out.println("isLocateSending: "+isLocateSending);
-                System.out.println("isLocateRecing: "+isLocateRecving);
-                if(isLocateSending || isLocateRecving){
+                System.out.println("isLocateSending: " + isLocateSending);
+                System.out.println("isLocateRecing: " + isLocateRecving);
+                if (isLocateSending || isLocateRecving) {
                     processLocate();
                     return (i + 1) * windowWidth * 2;
                 }
