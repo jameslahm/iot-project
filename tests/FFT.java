@@ -145,6 +145,8 @@ public class FFT {
         int errorPacketsNum = 0;
         int totalPacketsNum = 0;
 
+        long startTime = System.currentTimeMillis();
+
         while (true) {
             String res = contentReader.readLine();
             if(res==null){
@@ -274,6 +276,10 @@ public class FFT {
 
         System.out.println("Packet Error: "+String.format("%.2f",(double)errorPacketsNum/totalPacketsNum));
         resWriter.write(String.format("%.2f\n",(double)errorPacketsNum/totalPacketsNum));
+        
+        long endTime = System.currentTimeMillis();
+
+        System.out.println("Time: "+(endTime - startTime)+"ms");
 
         try {
             in.close();
