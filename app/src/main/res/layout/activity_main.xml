@@ -8,12 +8,12 @@
 
     <Button
         android:id="@+id/generate_text"
-        android:layout_width="182dp"
-        android:layout_height="50dp"
+        android:layout_width="179dp"
+        android:layout_height="54dp"
         android:layout_marginTop="88dp"
         android:text="@string/generate_text"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.812"
+        app:layout_constraintHorizontal_bias="0.807"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -116,8 +116,8 @@
 
     <Button
         android:id="@+id/stop_locate_button"
-        android:layout_width="160dp"
-        android:layout_height="49dp"
+        android:layout_width="157dp"
+        android:layout_height="55dp"
         android:layout_marginTop="404dp"
         android:text="@string/stop_locate"
         app:layout_constraintEnd_toEndOf="parent"
@@ -127,8 +127,8 @@
 
     <Button
         android:id="@+id/start_recv_locate"
-        android:layout_width="170dp"
-        android:layout_height="51dp"
+        android:layout_width="171dp"
+        android:layout_height="54dp"
         android:layout_marginTop="340dp"
         android:text="@string/recv_locate"
         app:layout_constraintEnd_toEndOf="parent"

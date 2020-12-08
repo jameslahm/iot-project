@@ -483,6 +483,9 @@ public class MainActivity extends AppCompatActivity {
         generateWav(dataBits);
 
         // start play (send data)
+        if(currentFrameId==0){
+            timeTextInput.setText(String.valueOf(System.currentTimeMillis()));
+        }
         mediaPlayer.start();
         System.out.println("The Frame " + currentFrameId);
         currentFrameId++;
@@ -1050,6 +1053,8 @@ public class MainActivity extends AppCompatActivity {
                 String text = new String(totalPayload, StandardCharsets.UTF_8);
                 System.out.println(text);
                 recvTextInput.setText(text);
+
+                timeTextInput.setText(String.valueOf(System.currentTimeMillis()));
 
                 byte[] recvBits = new byte[0];
                 recvBits = byte2bits(totalPayload);
