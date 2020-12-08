@@ -1,20 +1,26 @@
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 
 public class FFT {
 
     int n, m;
-    static int samplingRate = 44100;
-    static int encodeFrequencyForZero = 10000;
+    static int samplingRate = 48000;
+    static int encodeFrequencyForZero = 4000;
     static int encodeFrequencyForOne = 6000;
-    static double windowTime = 0.010;
+    static double windowTime = 0.025;
     static int windowWidth = (int) (windowTime * samplingRate);
-    static int FFT_LEN = 512;
+    static int FFT_LEN = 2048;
 
-    static int BUF_SIZE = windowWidth * 4;
-    static int ThresholdDownFrequency = 5000;
-    static int ThresholdUpFrequency = 11000;
+    static int BUF_SIZE = windowWidth * 2;
+    static int ThresholdDownFrequency = 3000;
+    static int ThresholdUpFrequency = 7000;
 
     // Lookup tables. Only need to recompute when size of FFT changes.
     double[] cos;
@@ -112,14 +118,13 @@ public class FFT {
         return res;
     }
 
-    public static void main(String[] args) {
-        FFT fft = new FFT(FFT_LEN);
+    public static void main(String[] args) throws IOException {
 
-        double time = 0;
+        FFT fft = new FFT(FFT_LEN);
 
         FileInputStream in;
         try {
-            in = new FileInputStream("recv3.wav");
+            in = new FileInputStream("res.wav");
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             return;
@@ -130,193 +135,152 @@ public class FFT {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        int num = 0;
 
-        byte[] temp = new byte[0];
-        boolean first = true;
-        int peakIndex = 0;
+        BufferedReader contentReader = new BufferedReader(
+                new InputStreamReader(new FileInputStream("content.csv"), StandardCharsets.UTF_8));
 
-        int AlignIndex = 0;
+        BufferedWriter resWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("res.txt"),StandardCharsets.UTF_8));
 
         int base = 0;
+        int errorPacketsNum = 0;
+        int totalPacketsNum = 0;
 
         while (true) {
-            try {
-                in.read(buffer, base, BUF_SIZE -base);
-            } catch (IOException e1) {
-                // TODO Auto-generated catch block
-                e1.printStackTrace();
+            String res = contentReader.readLine();
+            if(res==null){
+                break;
             }
+            String[] resList= res.replace(",", " ").strip().split(" ");
+            totalPacketsNum ++;
 
-            double[] signalData = new double[buffer.length / 2];
-            for (int i = 0; i < buffer.length / 2; i++) {
-                short temp2 = (short) ((((short) buffer[2 * i + 1]) << 8) + buffer[2 * i]);
-                signalData[i] = (double) temp2 / Short.MAX_VALUE;
+            System.out.println("Currenct Pakcet: "+totalPacketsNum);
+
+
+            // int id = Integer.parseInt(resList[0]);
+            // int snr = Integer.parseInt(resList[1]);
+            int payLoadLength = Integer.parseInt(resList[2]);
+            int startIndex = Integer.parseInt(resList[3]) *2 + 28 *windowWidth *2;
+
+            System.out.println("StartIndex: "+startIndex);
+            
+            int[] correctPayLoad = new int[payLoadLength];
+            for(int i=0;i<payLoadLength;i++){
+                correctPayLoad[i] = Integer.parseInt(resList[4+i]);
             }
-
-            double[] fftValues = new double[(signalData.length - windowWidth + 1) / 10];
-
-            for (int i = 0; i < fftValues.length; i++) {
-                double[] x = new double[FFT_LEN];
-                System.arraycopy(signalData, i * 10, x, 0, windowWidth);
-                for (int j = windowWidth; j < FFT_LEN; j++) {
-                    x[j] = 0;
+            
+            // locate to startIndex
+            while(true){
+                int bufferRead = in.read(buffer,0,Math.min(startIndex - base, BUF_SIZE));
+                base += bufferRead;
+                if(base == startIndex){
+                    break;
                 }
-                double[] y = new double[FFT_LEN];
-                for (int j = 0; j < FFT_LEN; j++) {
-                    y[j] = 0;
+            }
+            
+            int[] payload = new int[payLoadLength];
+
+            for(int j=0;j<payLoadLength;j++){
+                try {
+                    in.read(buffer,0,BUF_SIZE);
+                    base += BUF_SIZE;
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-                fft.fft(x, y);
-                double[] z = new double[FFT_LEN];
-
-                for (int j = 0; j < FFT_LEN; j++) {
-                    z[j] = Math.pow(x[j], 2) + Math.pow(y[j], 2);
+    
+                // transfer buffer to signal data
+                double[] signalData = new double[buffer.length / 2];
+                for (int i = 0; i < buffer.length / 2; i++) {
+                    short temp2 = (short) (((short) (buffer[2 * i + 1]) << 8) + buffer[2 * i]);
+                    signalData[i] = (double) temp2 / Short.MAX_VALUE;
+                    // System.out.println(signalData[i]);
                 }
-
-                int indexForOne = (int) ((double) encodeFrequencyForOne / samplingRate * FFT_LEN);
-
-                fftValues[i] = max(z, indexForOne - 2, indexForOne + 3);
-
-            }
-
-            peakIndex = argMax(fftValues, 0, fftValues.length);
-
-            System.out.println("PeakIndex " + peakIndex);
-            System.out.println("Value " + fftValues[peakIndex]);
-
-            if (fftValues[peakIndex] < 200){
-                AlignIndex += fftValues.length * 10;
-                base = buffer.length - fftValues.length * 10 *2;
-                
-                byte[] temp3 = new byte[base];
-                System.arraycopy(buffer,0,temp3,0, base);
-                System.arraycopy(temp3, 0,buffer , 0, base);
-
-                System.out.println("Two Low");
-                continue;
-            }
-
-            if(peakIndex == fftValues.length-1){
-                AlignIndex += peakIndex * 10;
-                base = buffer.length - peakIndex *10 *2;
-                
-                byte[] temp3 = new byte[base];  
-                System.arraycopy(buffer,peakIndex *10*2,temp3,0, base);
-                System.arraycopy(temp3, 0,buffer , 0, base);
-                System.out.println("Going Peak");
-                continue;
-            }
-
-            temp = new byte[BUF_SIZE - peakIndex * 2 * 10];
-            AlignIndex += peakIndex * 10;
-            System.arraycopy(buffer, peakIndex * 2 * 10, temp, 0, BUF_SIZE - peakIndex * 2 * 10);
-            System.out.println(AlignIndex);
-            break;
-        }   
-        
-        while (true) {
-            try {
-                if (first) {
-                    System.arraycopy(temp, 0, buffer, 0, BUF_SIZE - peakIndex * 2 * 10);
-                    in.read(buffer, BUF_SIZE - peakIndex * 2 * 10, peakIndex * 2 * 10);
-                    first = false;  
-                } else {
-                    if (in.read(buffer, 0, BUF_SIZE) == -1) {
-                        break;
+    
+                int bitsLength = signalData.length / windowWidth;
+                byte[] dataBits = new byte[bitsLength];
+    
+                for (int i = 0; i < bitsLength; i++) {
+                    double[] x = new double[FFT_LEN];
+                    System.arraycopy(signalData, i * windowWidth, x, 0, windowWidth);
+                    // System.out.println(windowWidth);
+                    // System.out.println(FFT_LEN);
+                    for (int k = windowWidth; k < FFT_LEN; k++) {
+                        x[k] = 0;
                     }
-                    ;
+                    double[] y = new double[FFT_LEN];
+                    for (int k = 0; k < FFT_LEN; k++) {
+                        y[k] = 0;
+                    }
+                    fft.fft(x, y);
+    
+                    int indexForOne = (int) ((double) encodeFrequencyForOne / samplingRate * FFT_LEN);
+                    int indexForZero = (int) ((double) encodeFrequencyForZero / samplingRate * FFT_LEN);
+    
+                    // System.out.println(indexForOne);
+                    // System.out.println(indexForZero);
+    
+                    double[] z = new double[FFT_LEN];
+    
+                    for (int k = 0; k < FFT_LEN; k++) {
+                        z[k] = Math.pow(x[k], 2) + Math.pow(y[k], 2);
+                        // System.out.println(z[j]);
+                    }
+    
+                    int argMaxIndex = argMax(z, (int) ((double) ThresholdDownFrequency / samplingRate * FFT_LEN),
+                            (int) ((double) ThresholdUpFrequency / samplingRate * FFT_LEN));
+                    // int argMaxIndex = argMax(z, (int) ((double) 0 / samplingRate * FFT_LEN),
+                    // (int) ((double) samplingRate / samplingRate * FFT_LEN));
+                    // System.out.println(argMaxIndex + " " + z[argMaxIndex]);
+    
+                    // System.out.println("Hello");
+                    
+                    // System.out.println(z[argMaxIndex]);
+                    // System.out.println(argMaxIndex);
+
+                    if (Math.abs(argMaxIndex - indexForOne) <= 2 && z[argMaxIndex] >= 200) {
+                        // System.out.println(time);
+                        dataBits[i] = 1;
+                        System.out.print(dataBits[i]);
+                    } else if (Math.abs(argMaxIndex - indexForZero) <= 2 && z[argMaxIndex] >= 100) {
+                        // System.out.println(time);
+                        dataBits[i] = 0;
+                        System.out.print(dataBits[i]);
+                    } else {
+                        System.out.println("Attention");
+                        dataBits[i] = (byte) 0xff;
+                    }
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
+
+                payload[j] = dataBits[0];
             }
 
-            // transfer buffer to signal data
-            double[] signalData = new double[buffer.length / 2];
-            for (int i = 0; i < buffer.length / 2; i++) {
-                short temp2 = (short) (((short) (buffer[2 * i + 1]) << 8) + buffer[2 * i]);
-                signalData[i] = (double) temp2 / Short.MAX_VALUE;
-                // System.out.println(signalData[i]);
-            }
-
-            int bitsLength = signalData.length / windowWidth;
-            byte[] dataBits = new byte[bitsLength];
-
-            for (int i = 0; i < bitsLength; i++) {
-                time += 0.01;
-                // System.out.println("Time: "+time);
-                double[] x = new double[FFT_LEN];
-                System.arraycopy(signalData, i * windowWidth, x, 0, windowWidth);
-                // System.out.println(windowWidth);
-                // System.out.println(FFT_LEN);
-                for (int j = windowWidth; j < FFT_LEN; j++) {
-                    x[j] = 0;
-                }
-                double[] y = new double[FFT_LEN];
-                for (int j = 0; j < FFT_LEN; j++) {
-                    y[j] = 0;
-                }
-                fft.fft(x, y);
-
-                int indexForOne = (int) ((double) encodeFrequencyForOne / samplingRate * FFT_LEN);
-                int indexForZero = (int) ((double) encodeFrequencyForZero / samplingRate * FFT_LEN);
-
-                // System.out.println(indexForOne);
-                // System.out.println(indexForZero);
-
-                double[] z = new double[FFT_LEN];
-
-                for (int j = 0; j < FFT_LEN; j++) {
-                    z[j] = Math.pow(x[j], 2) + Math.pow(y[j], 2);
-                    // System.out.println(z[j]);
-                }
-
-                int argMaxIndex = argMax(z, (int) ((double) ThresholdDownFrequency / samplingRate * FFT_LEN),
-                        (int) ((double) ThresholdUpFrequency / samplingRate * FFT_LEN));
-                // int argMaxIndex = argMax(z, (int) ((double) 0 / samplingRate * FFT_LEN),
-                //         (int) ((double) samplingRate / samplingRate * FFT_LEN));
-                // System.out.println(argMaxIndex + " " + z[argMaxIndex]);
-
-                // System.out.println("Hello");
-
-                if (Math.abs(argMaxIndex - indexForOne) <= 2 && z[argMaxIndex] >= 200) {
-                    // System.out.println(time);
-                    dataBits[i] = 1;
-                    System.out.print(dataBits[i]);
-                    num++;
-                } else if (Math.abs(argMaxIndex - indexForZero) <= 2 && z[argMaxIndex] >= 100) {
-                    // System.out.println(time);
-                    dataBits[i] = 0;
-                    System.out.print(dataBits[i]);
-                    num++;
-                } else {
-                    // System.out.println(time);
-                    // System.out.println("Attention");
-                    dataBits[i] = (byte) 0xff;
-                }
-                if(num % 8==0){
-                    System.out.println();
+            int correctBitsNum = 0;
+            for(int m=0;m<payLoadLength;m++){
+                if(payload[m]==correctPayLoad[m]){
+                    correctBitsNum++;
                 }
             }
+
+            System.out.println("");
+
+            System.out.println("Bit Error: "+String.format("%.2f",1-(double)correctBitsNum/payLoadLength));
+            resWriter.write(String.format("%.2f\n",1-(double)correctBitsNum/payLoadLength));
+            
+            if(correctBitsNum != payLoadLength){
+                errorPacketsNum++;
+            }
+
+            // break;
         }
-        System.out.println(num);
+
+        System.out.println("Packet Error: "+String.format("%.2f",(double)errorPacketsNum/totalPacketsNum));
+        resWriter.write(String.format("%.2f\n",(double)errorPacketsNum/totalPacketsNum));
 
         try {
             in.close();
+            contentReader.close();
+            resWriter.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        System.out.println(time);
-        // byte[] dataBytes = new byte[dataBits.length / 8];
-        // int byteValue = 0;
-        // for (int index = 0; index < dataBits.length; index++) {
-
-        // byteValue = (byteValue << 1) | dataBits[index];
-
-        // if (index % 8 == 7) {
-        // dataBytes[index / 8] = (byte) byteValue;
-        // byteValue = 0;
-        // }
-        // }
     }
 }
