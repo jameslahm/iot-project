@@ -708,7 +708,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         try {
-                            Thread.sleep(3000);
+                            Thread.sleep(1000);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
@@ -1227,7 +1227,7 @@ public class MainActivity extends AppCompatActivity {
 
         if(TA1Align == 0 || TB1Align ==0) {
             if (isLocateSender) {
-                if (TA3Align <= windowWidth * 2 * 100) {
+                if (TA3Align <= windowWidth * 2 * 50) {
                     res[0] = 0;
                     res[1] = fftValues.length * rate * 2;
                     if (fftValues[peakIndex] > 1) {
@@ -1245,7 +1245,7 @@ public class MainActivity extends AppCompatActivity {
                     return res;
                 }
             } else {
-                if (TB3Align <= windowWidth * 2 * 100) {
+                if (TB3Align <= windowWidth * 2 * 50) {
                     res[0] = 0;
                     res[1] = fftValues.length * rate * 2;
                     if (fftValues[peakIndex] > 1) {
