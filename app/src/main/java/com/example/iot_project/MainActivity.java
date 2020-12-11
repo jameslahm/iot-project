@@ -1184,7 +1184,7 @@ public class MainActivity extends AppCompatActivity {
 
 
         // Threshold
-        int Threshold = isLocateRecving || isLocateSending ? 200 : 10000;
+        int Threshold = isLocateRecving || isLocateSending ? 200 : 1000;
         if (isLocateSending && isLocateSender) {
             Threshold = 10;
         }
