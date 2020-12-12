@@ -48,6 +48,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Random;
 
 import biz.source_code.dsp.filter.FilterPassType;
 import biz.source_code.dsp.filter.IirFilter;
@@ -147,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
 
     int leftFlushs = 0;
     int FRAME_ID_LENGTH = 1;
-    int FRAME_MAX_LENGTH = 10;
+    int FRAME_MAX_LENGTH = 255;
 
     int leftFrames = 0;
 
@@ -222,7 +223,15 @@ public class MainActivity extends AppCompatActivity {
         generateTextButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String text="askcbhdahckvdsajkcvdakbcyhdskbckadcb kacdhbahk dcbakcbsd kcahdvcbk12213132432asascdscd31432432asdsa";
+                String str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+                Random random = new Random(0);
+                StringBuffer stringBuffer = new StringBuffer();
+                for (int i = 0; i < 305; i++) {
+                    int number = random.nextInt(62);
+                    stringBuffer.append(str.charAt(number));
+                }
+                String text = stringBuffer.toString();
+
                 sendTextInput.setText(text);
             }
         });
@@ -579,7 +588,7 @@ public class MainActivity extends AppCompatActivity {
                         buffer = bufferTemp;
                         base = temp.length - checkIndex;
 
-                        leftFlushs = 50;
+                        leftFlushs = 0;
                     }
                     continue;
 
@@ -813,7 +822,6 @@ public class MainActivity extends AppCompatActivity {
 
         if (payloadBase == -1) {
             payloadLength = (int) dataBytes[0] & 0xff;
-            payloadLength = payloadLength & 0x000f;
             payloadBase = 0;
 
             if (payloadLength == 0) {
@@ -828,7 +836,7 @@ public class MainActivity extends AppCompatActivity {
             }
             leftFrames--;
             if(leftFrames!=0){
-                payloadLength = 10;
+                payloadLength = FRAME_MAX_LENGTH;
             }
             System.out.println("PayloadLength: " + payloadLength);
 
@@ -857,7 +865,7 @@ public class MainActivity extends AppCompatActivity {
 
                 byte[] temp = new byte[totalPayload.length + payload.length];
                 System.arraycopy(totalPayload,0,temp,0,totalPayload.length);
-                System.arraycopy(payload,0,temp,0,payload.length);
+                System.arraycopy(payload,0,temp,totalPayload.length,payload.length);
                 totalPayload = temp;
 
                 if(leftFrames==0){
@@ -881,7 +889,7 @@ public class MainActivity extends AppCompatActivity {
                 preambleBits = new byte[]{-1, -1, -1, -1, -1, -1, -1, -1};
                 byte[] temp = new byte[totalPayload.length + payload.length];
                 System.arraycopy(totalPayload,0,temp,0,totalPayload.length);
-                System.arraycopy(payload,0,temp,0,payload.length);
+                System.arraycopy(payload,0,temp,totalPayload.length,payload.length);
                 totalPayload = temp;
 
                 if(leftFrames==0){
@@ -1074,19 +1082,19 @@ public class MainActivity extends AppCompatActivity {
 
 
     public int checkPreamble(byte[] buffer) {
+        if(isCheckAlign) {
+            int[] res = checkAlign(buffer);
+            if (res[0] != 0) {
+                isCheckAlign = false;
+                System.out.println("Align: " + res[1]);
+            }
+            return res[1];
+        }
+
         byte[] dataBits = signal2DataBits(buffer);
         int bitsLength = dataBits.length;
-//        debugBits(dataBits);
+        debugBits(dataBits);
 
-//        if(isCheckAlign) {
-//            int[] res = checkAlign(buffer);
-//            if (res[0] != 0) {
-//                isCheckAlign = false;
-//                System.out.println("Align: "+res[1]);
-//            }
-//            return res[1];
-//        }
-//        debugBits(dataBits);
         for (int i = 0; i < bitsLength; i++) {
             for (int j = 0; j < preambleBits.length - 1; j++) {
                 preambleBits[j] = preambleBits[j + 1];
@@ -1105,10 +1113,10 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-//        if(currentPreamBitsNum>=8){
-//            isCheckAlign = true;
-//            currentPreamBitsNum = 0;
-//        }
+        if(currentPreamBitsNum>=8){
+            isCheckAlign = true;
+            currentPreamBitsNum = 0;
+        }
 
         return bitsLength * windowWidth * 2;
 
