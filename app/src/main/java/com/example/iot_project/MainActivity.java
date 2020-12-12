@@ -1040,7 +1040,9 @@ public class MainActivity extends AppCompatActivity {
         if(fftValues[peakIndex] <= 100){
             res[0]=0;
             res[1]=fftValues.length * rate *2;
-//            System.out.println("Too Low");
+            if(fftValues[peakIndex]>=10){
+                System.out.println("Too Low");
+            }
             return  res;
         }
 
