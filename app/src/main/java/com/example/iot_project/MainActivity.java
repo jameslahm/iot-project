@@ -155,6 +155,7 @@ public class MainActivity extends AppCompatActivity {
     byte[] currentTextBytes;
     int currentFrameId;
 
+    EditText showTimeText;
 
     // get permission
     private void GetPermission() {
@@ -207,6 +208,8 @@ public class MainActivity extends AppCompatActivity {
         fft = new FFT(FFT_LEN);
 
         // init button and input
+        showTimeText = (EditText) findViewById(R.id.show_time);
+
         accuracyTextInput = (EditText) findViewById(R.id.show_accuracy);
         generateTextButton = (Button) findViewById(R.id.generate_text);
 
@@ -422,6 +425,9 @@ public class MainActivity extends AppCompatActivity {
         byte[] dataBits = byte2bits(dataBytes);
         generateWav(dataBits);
 
+        if(currentFrameId==0){
+            showTimeText.setText(String.valueOf(System.currentTimeMillis()));
+        }
         // start play (send data)
         mediaPlayer.start();
         System.out.println("The Frame "+currentFrameId);
@@ -945,8 +951,11 @@ public class MainActivity extends AppCompatActivity {
                 result += "%";
 
                 accuracyTextInput.setText(result);
+                showTimeText.setText(String.valueOf(System.currentTimeMillis()));
+
                 System.out.println("Recv: "+recvBits.length);
                 System.out.println("Send: "+textBits.length);
+
 
                 totalPayload = new byte[0];
             }
