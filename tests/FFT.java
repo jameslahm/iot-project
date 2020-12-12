@@ -140,6 +140,7 @@ public class FFT {
                 new InputStreamReader(new FileInputStream("content.csv"), StandardCharsets.UTF_8));
 
         BufferedWriter resWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("res.txt"),StandardCharsets.UTF_8));
+        BufferedWriter resCsvWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("res.csv"),StandardCharsets.UTF_8));
 
         int base = 0;
         int errorPacketsNum = 0;
@@ -169,6 +170,8 @@ public class FFT {
             for(int i=0;i<payLoadLength;i++){
                 correctPayLoad[i] = Integer.parseInt(resList[4+i]);
             }
+
+            resCsvWriter.write(payLoadLength+",");
             
             // locate to startIndex
             while(true){
@@ -242,13 +245,16 @@ public class FFT {
                         // System.out.println(time);
                         dataBits[i] = 1;
                         System.out.print(dataBits[i]);
+                        resCsvWriter.write((int)dataBits[i]+",");
                     } else if (Math.abs(argMaxIndex - indexForZero) <= 2 && z[argMaxIndex] >= 100) {
                         // System.out.println(time);
                         dataBits[i] = 0;
                         System.out.print(dataBits[i]);
+                        resCsvWriter.write((int)dataBits[i]+",");
                     } else {
                         System.out.println("Attention");
                         dataBits[i] = (byte) 0xff;
+                        resCsvWriter.write((int)dataBits[i]+",");
                     }
                 }
 
@@ -266,6 +272,7 @@ public class FFT {
 
             System.out.println("Bit Error: "+String.format("%.2f",1-(double)correctBitsNum/payLoadLength));
             resWriter.write(String.format("%.2f\n",1-(double)correctBitsNum/payLoadLength));
+            resCsvWriter.write("\n");
             
             if(correctBitsNum != payLoadLength){
                 errorPacketsNum++;
@@ -284,6 +291,7 @@ public class FFT {
         try {
             in.close();
             contentReader.close();
+            resCsvWriter.close();
             resWriter.close();
         } catch (IOException e) {
             e.printStackTrace();
