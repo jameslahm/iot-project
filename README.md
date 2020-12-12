@@ -1,41 +1,29 @@
-### 通过声音信号传输文本
+### 声波信号模拟蓝牙通信
 
-#### 处理流程
+```bash
+# 切换到相应分支
+git checkout test-message
+```
 
-###### 发送端
-
-- 获取用户输入文本
-- 将文本编码为字节
-- 将传输数据包装为帧
-- 调制帧为声音信号
-- 播放声音信号
-
-###### 接收端
-
-- 开始监听声音信号
-- 解码声音信号，匹配前导码
-- 定位帧位置，获取包头及传输数据
-- 校验帧数据
-- 解码传输数据，获取传输文本
+将项目在`Android Studio`打开，运行或者生成apk
 
 
 
-#### 功能实现
+![](message.png)
 
-- 编码文本部分：将输入文本使用`utf-8`进行编码成字节（可参考 https://github.com/sunziping2016/SoundMessage/blob/1a64021e57933b2c3a3bcb0ebd200653a5d7754b/app/src/main/java/io/szp/soundmessage/SignalProcessing.java#L210 ）
-- 生成帧数据部分：按照帧格式，形成帧数据，包括前导码，校验码等（可参考https://github.com/sunziping2016/SoundMessage/blob/1a64021e57933b2c3a3bcb0ebd200653a5d7754b/app/src/main/java/io/szp/soundmessage/MainActivity.java#L525 ）
-- 调制部分：按照调制协议格式，将帧数据调制为帧信号（可参考https://github.com/sunziping2016/SoundMessage/blob/1a64021e57933b2c3a3bcb0ebd200653a5d7754b/app/src/main/java/io/szp/soundmessage/MainActivity.java#L525 ）
-- 发送部分：使用`MediaPlayer`或者`AudioTrack`进行播放（可参考https://github.com/sunziping2016/SoundMessage/blob/1a64021e57933b2c3a3bcb0ebd200653a5d7754b/app/src/main/java/io/szp/soundmessage/MainActivity.java#L632 ）
-- 接收部分：开始接收声音信号后，解码信号（可参考https://github.com/sunziping2016/SoundMessage/blob/1a64021e57933b2c3a3bcb0ebd200653a5d7754b/app/src/main/java/io/szp/soundmessage/MainActivity.java#L738 ）
-- 解码部分：匹配前导码，获取传输数据后，校验，并将数据按照`utf-8`格式解码为文本（可参考https://github.com/sunziping2016/SoundMessage/blob/1a64021e57933b2c3a3bcb0ebd200653a5d7754b/app/src/main/java/io/szp/soundmessage/MainActivity.java#L777 ）
+首先在接收方设备上点击`START RECV`按钮，并在接收方设备上输入发送方要发送的文本（用于计算传输比特准确率），在发送方设备上最上方输入要发送的文本，然后点击`SEND TEXT`即可，接收方接收到后会在`Recv Text`文本框中显示收到的文本，并在下面的`Accuracy`文本框中显示传输比特正确率；点击`STOP RECV`可以停止接收，点击`GENERATE TEXT`可生成随机文本；发送方在发送时会在下面`Time`文本框显示当前时间（ms为单位），接收方接收完毕后也会在该位置显示当前时间，用于计算传输耗时
 
 
 
-#### 参考资料
+### 声波测距
 
-- `FFT`实现：https://stackoverflow.com/questions/9272232/fft-library-in-android-sdk
-- 整体实现：https://github.com/sunziping2016/SoundMessage
+```bash
+git checkout master
+```
 
-## 
+将项目在`Android Studio`打开，运行或生成apk
 
-### 通过声音信号进行定位
+![](location.png)
+
+首先在设备A上点击`LISTEN LOCATE`按钮，接着在设备B上点击`RECV LOCATE`按钮，然后在设备A上点击`START LOCATE`按钮，设备A会发送信号，设备B监听到后等待约1s，会发送信号，测距完毕后设备A和设备B会在`TIME`文本框中显示各自的时间差（ms为单位），通过时间差按照公式即可计算距离
+
